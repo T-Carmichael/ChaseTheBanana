@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chase The Banana 🍌</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0E2226">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chase Banana">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#0E2226;
+  --bg-elev:#14313590;
+  --bg-elev-solid:#153337;
+  --bg-elev-2:#1C4045;
+  --line:#2B4E52;
+  --text:#EDEAE0;
+  --text-muted:#8FADAC;
+  --text-dim:#5F8483;
+  --hard:#E8583F;
+  --hard-dim:#E8583F33;
+  --easy:#E6A93F;
+  --easy-dim:#E6A93F33;
+  --long:#5FA88A;
+  --long-dim:#5FA88A33;
+  --data-fitness:#E6A93F;
+  --data-fatigue:#5B8FC0;
+  --z1:#3E6360;
+  --z2:#E6A93F;
+  --z3:#D97F3F;
+  --z4:#E8583F;
+  --radius:14px;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--bg); color:var(--text); overflow-x:hidden; max-width:100%;}
+body{
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, #1C4045 0%, transparent 60%),
+    radial-gradient(ellipse 700px 600px at 110% 10%, #17383a 0%, transparent 55%),
+    var(--bg);
+  padding-bottom:60px;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.display{font-family:'Oswald',sans-serif;}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px;}
+
+/* HEADER */
+header{padding:28px 0 18px; border-bottom:1px solid var(--line);}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--text-dim);
+}
+.header-row{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-top:6px;}
+h1{
+  font-family:'Oswald',sans-serif; font-weight:600; font-size:30px;
+  letter-spacing:.01em; text-transform:uppercase; color:var(--text);
+}
+.subtitle{
+  font-size:12.5px; color:var(--easy); margin-top:4px; font-style:italic;
+}
+.profile-chip{
+  display:flex; gap:10px; align-items:center;
+  font-size:12.5px; color:var(--text-muted);
+}
+.profile-chip span{
+  border:1px solid var(--line); border-radius:999px; padding:5px 12px;
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+}
+
+/* HERO SPLITS */
+.hero{padding:34px 0 8px;}
+.splits{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+}
+.split{
+  background:var(--bg-elev-solid); padding:22px 20px;
+}
+.split-label{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--text-dim); margin-bottom:10px;
+}
+.split-value{
+  font-family:'Oswald',sans-serif; font-weight:600; font-size:44px; line-height:1;
+  letter-spacing:.01em;
+}
+.split-value small{font-size:16px; font-weight:500; color:var(--text-muted); margin-left:4px;}
+.split.fitness .split-value{color:var(--data-fitness);}
+.split.fatigue .split-value{color:var(--data-fatigue);}
+.split.form .split-value{color:var(--long);}
+.split.form.negative .split-value{color:var(--hard);}
+
+.verdict{
+  margin-top:16px; padding:16px 18px; border-radius:10px;
+  background:var(--bg-elev); border-left:3px solid var(--long);
+  font-size:14.5px; line-height:1.55; color:var(--text);
+}
+.verdict.warn{border-left-color:var(--hard);}
+.verdict b{color:inherit;}
+
+.insight{
+  margin-top:10px; padding:14px 18px; border-radius:10px;
+  background:#E6A93F14; border-left:3px solid var(--easy);
+  font-size:13.5px; line-height:1.55; color:var(--text-muted);
+  display:none;
+}
+
+/* SECTIONS */
+section{padding:38px 0;}
+section + section{border-top:1px solid var(--line);}
+.section-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px; flex-wrap:wrap; gap:8px;}
+.section-title{
+  font-family:'Oswald',sans-serif; font-weight:600; font-size:20px;
+  text-transform:uppercase; letter-spacing:.01em;
+}
+.section-sub{font-size:12.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace;}
+
+/* ZONE LADDER - signature element */
+.ladder{border:1px solid var(--line); border-radius:var(--radius); padding:20px; background:var(--bg-elev);}
+.ladder-track{
+  display:flex; height:34px; border-radius:6px; overflow:hidden; border:1px solid var(--line);
+  margin-bottom:14px; position:relative;
+}
+.ladder-seg{height:100%; position:relative; transition:width .5s ease;}
+.ladder-seg::after{
+  content:attr(data-pct); position:absolute; top:50%; left:8px; transform:translateY(-50%);
+  font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#0E2226;
+  opacity:.85;
+}
+.ladder-legend{display:flex; gap:22px; flex-wrap:wrap;}
+.legend-item{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-muted);}
+.legend-dot{width:10px; height:10px; border-radius:3px; flex-shrink:0;}
+.legend-item b{color:var(--text); font-family:'IBM Plex Mono',monospace;}
+
+/* CHARTS */
+.chart-card{border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-elev); padding:20px; margin-bottom:16px;}
+.chart-inner{position:relative; height:220px;}
+.chart-inner canvas{position:absolute; left:0; top:0; width:100% !important; height:100% !important;}
+
+/* TABLE */
+.runs-table{width:100%; border-collapse:collapse; font-size:13px;}
+.runs-table th{
+  text-align:left; font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--text-dim); padding:8px 10px; border-bottom:1px solid var(--line);
+}
+.runs-table td{padding:10px 10px; border-bottom:1px solid #1c3f42; font-family:'IBM Plex Mono',monospace; font-size:12.5px;}
+.runs-table tr:last-child td{border-bottom:none;}
+.runs-table .name-cell{font-family:'Inter',sans-serif; font-size:12.5px; color:var(--text-muted); max-width:230px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.zone-badge{
+  display:inline-block; padding:2px 7px; border-radius:5px; font-size:10.5px; font-weight:600;
+}
+.table-wrap{border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-elev); padding:6px 14px; overflow-x:auto;}
+
+/* PLAN CARDS */
+.plan-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px;}
+.coach-stats{
+  display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line);
+  border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:16px;
+}
+.coach-stat{background:var(--bg-elev); padding:12px 10px; text-align:center;}
+.coach-stat-label{font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); margin-bottom:5px;}
+.coach-stat-value{font-family:'Oswald',sans-serif; font-size:19px; font-weight:600;}
+.scale-note{font-size:11px; color:var(--text-dim); line-height:1.5; margin:-6px 0 16px;}
+
+.beginner-note{
+  padding:14px 16px; border-radius:10px; background:#5FA88A14; border-left:3px solid var(--long);
+  font-size:13px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;
+}
+.beginner-table-wrap{border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-elev); padding:6px 14px; overflow-x:auto;}
+.beginner-table{width:100%; border-collapse:collapse; font-size:13px;}
+.beginner-table th{
+  text-align:left; font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--text-dim); padding:10px 10px; border-bottom:1px solid var(--line);
+}
+.beginner-table td{padding:12px 10px; border-bottom:1px solid #1c3f42; vertical-align:top;}
+.beginner-table tr:last-child td{border-bottom:none;}
+.beginner-table tr.current-week{background:#E6A93F0f;}
+.beginner-week-num{font-family:'Oswald',sans-serif; font-weight:600; font-size:16px;}
+.beginner-code{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--long); display:block; margin-top:3px;}
+.beginner-desc{font-size:12.5px; color:var(--text-muted); line-height:1.5;}
+.beginner-copy-btn{width:auto; margin-top:0; padding:7px 12px; font-size:11px; white-space:nowrap;}
+
+.onboard-banner{
+  margin-top:22px; padding:20px; border-radius:var(--radius);
+  background:#E6A93F14; border:1px solid var(--easy);
+}
+.onboard-title{font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:.01em;}
+.onboard-text{font-size:13px; color:var(--text-muted); line-height:1.6; margin-bottom:14px;}
+.onboard-btn{
+  background:var(--easy); color:#0E2226; border:none; border-radius:8px; padding:10px 18px;
+  font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; text-transform:uppercase;
+  letter-spacing:.03em; cursor:pointer;
+}
+
+/* GUIDE BUTTON + MODAL */
+.guide-btn{
+  border:1px solid var(--line); border-radius:999px; padding:5px 12px; background:transparent;
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--text-muted); cursor:pointer;
+  transition:border-color .2s, color .2s;
+}
+.guide-btn:hover{border-color:var(--easy); color:var(--text);}
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(6,15,17,.82); z-index:1000;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  backdrop-filter:blur(2px);
+}
+.modal-card{
+  background:var(--bg-elev-solid); border:1px solid var(--line); border-radius:16px;
+  max-width:640px; width:100%; max-height:88vh; display:flex; flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.modal-header{
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+  padding:18px 20px; border-bottom:1px solid var(--line); flex-shrink:0;
+}
+.modal-title{font-family:'Oswald',sans-serif; font-weight:600; font-size:16px; text-transform:uppercase;}
+.modal-close{
+  background:transparent; border:1px solid var(--line); border-radius:8px; color:var(--text-muted);
+  width:32px; height:32px; font-size:16px; cursor:pointer; flex-shrink:0;
+}
+.modal-close:hover{border-color:var(--hard); color:var(--hard);}
+.modal-body{padding:20px 22px 28px; overflow-y:auto;}
+.guide-intro{font-size:13.5px; color:var(--text-muted); line-height:1.6; margin-bottom:18px;}
+.modal-body h3{
+  font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; letter-spacing:.01em;
+  color:var(--easy); margin:22px 0 10px; padding-top:14px; border-top:1px solid var(--line);
+}
+.modal-body h3:first-of-type{margin-top:0; padding-top:0; border-top:none;}
+.guide-p{font-size:13px; color:var(--text-muted); line-height:1.65; margin-bottom:10px;}
+.guide-list{margin:0 0 12px 20px; padding:0;}
+.guide-list li{font-size:13px; color:var(--text-muted); line-height:1.65; margin-bottom:6px;}
+.guide-list b{color:var(--text);}
+.guide-p b{color:var(--text);}
+.guide-callout{
+  background:#5FA88A14; border-left:3px solid var(--long); border-radius:8px;
+  padding:12px 14px; font-size:12.5px; color:var(--text-muted); line-height:1.6; margin-bottom:12px;
+}
+.guide-table{width:100%; border-collapse:collapse; margin-bottom:12px; font-size:12.5px;}
+.guide-table td{padding:8px 10px; border-bottom:1px solid var(--line); color:var(--text-muted); vertical-align:top;}
+.guide-table td:first-child{white-space:nowrap; width:1%; color:var(--text);}
+.plan-card{
+  border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-elev);
+  padding:20px; border-left:4px solid var(--easy);
+}
+.plan-card.tempo{border-left-color:var(--hard);}
+.plan-card.long{border-left-color:var(--long);}
+.plan-kind{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;}
+.plan-title{font-family:'Oswald',sans-serif; font-size:18px; font-weight:600; margin-bottom:14px;}
+.plan-num{font-family:'Oswald',sans-serif; font-size:34px; font-weight:600; line-height:1;}
+.plan-num small{font-size:14px; color:var(--text-muted); font-weight:500;}
+.plan-pace{font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--text-muted); margin:10px 0 12px;}
+.plan-desc{font-size:12.5px; color:var(--text-muted); line-height:1.5;}
+.plan-statrow{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0 10px; padding:10px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+.plan-statlabel{font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-dim); margin-bottom:3px;}
+.plan-statval{font-size:13px; font-weight:600;}
+.zmini-bar{display:flex; height:8px; border-radius:4px; overflow:hidden; margin-bottom:12px;}
+.zmini-seg{height:100%;}
+.nutrition-list{list-style:none; margin:0; padding:0;}
+.nutrition-list li{
+  font-size:12.5px; color:var(--text-muted); line-height:1.5; padding-left:16px; position:relative; margin-bottom:9px;
+}
+.nutrition-list li:last-child{margin-bottom:0;}
+.nutrition-list li::before{
+  content:'—'; position:absolute; left:0; color:var(--text-dim);
+}
+.wo-code{
+  margin-top:14px; background:var(--bg-elev-2); border:1px solid var(--line); border-radius:8px;
+  padding:10px 12px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.6;
+  color:var(--text-muted); white-space:pre-wrap; overflow-x:auto;
+}
+.copy-btn{
+  margin-top:10px; width:100%; background:transparent; border:1px solid var(--line); border-radius:8px;
+  padding:8px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+  cursor:pointer; transition:border-color .2s, background .2s;
+}
+.copy-btn:hover{border-color:var(--easy); background:#E6A93F14;}
+.send-row{display:flex; gap:8px; margin-top:8px;}
+.send-row .send-date{flex:0 0 auto; width:auto; padding:7px 8px; font-size:11.5px;}
+.send-row .send-btn{margin-top:0; flex:1;}
+.sync-note{
+  margin-top:16px; padding:16px 18px; border-radius:10px; background:var(--bg-elev);
+  border-left:3px solid var(--data-fatigue); font-size:13px; line-height:1.6; color:var(--text-muted);
+}
+.sync-note b{color:var(--text);}
+.sync-note ol{margin:8px 0 0 18px; padding:0;}
+.sync-note li{margin-bottom:4px;}
+
+/* IMPORT / ADD */
+.tools-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:16px;}
+@media (max-width:720px){.tools-grid{grid-template-columns:1fr;} .splits{grid-template-columns:1fr;}}
+
+/* PROGRAM TIMELINE */
+.program-scroll{display:flex; gap:10px; overflow-x:auto; padding:2px 2px 10px;}
+.week-card{
+  flex:0 0 112px; border:1px solid var(--line); border-radius:10px; background:var(--bg-elev);
+  padding:12px 10px; text-align:center;
+}
+.week-card.current{border-color:var(--easy); background:#E6A93F14;}
+.week-card.race{border-color:var(--hard); background:#E8583F14;}
+.week-phase{font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:6px;}
+.week-date{font-size:10.5px; color:var(--text-muted); margin-bottom:10px;}
+.week-km{font-family:'Oswald',sans-serif; font-size:21px; font-weight:600; line-height:1;}
+.week-km small{font-size:11px; font-weight:500; color:var(--text-muted);}
+.week-long{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-muted); margin-top:6px;}
+.week-ramp{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-dim); margin-top:3px;}
+@media (max-width:600px){
+  .wrap{padding:0 14px;}
+  header{padding:20px 0 14px;}
+  h1{font-size:24px;}
+  .header-row{flex-direction:column; align-items:flex-start; gap:10px;}
+  .profile-chip{flex-wrap:wrap; gap:8px;}
+  .profile-chip span{padding:4px 10px; font-size:10.5px;}
+  .eyebrow{font-size:10px; line-height:1.5;}
+
+  .hero{padding:24px 0 4px;}
+  .split{padding:16px 14px;}
+  .split-value{font-size:32px;}
+  .split-value small{font-size:13px;}
+  .verdict, .insight{padding:13px 14px; font-size:13.5px;}
+
+  section{padding:26px 0;}
+  .section-head{margin-bottom:14px;}
+  .section-title{font-size:17px;}
+  .section-sub{font-size:11px;}
+
+  .ladder{padding:14px;}
+  .ladder-track{height:28px;}
+  .ladder-seg::after{font-size:9.5px; left:6px;}
+  .ladder-legend{gap:12px 16px;}
+  .legend-item{font-size:11.5px;}
+
+  .chart-card{padding:14px 10px 14px 4px;}
+  .chart-inner{height:180px;}
+
+  .plan-grid{grid-template-columns:1fr; gap:12px;}
+  .modal-overlay{padding:0;}
+  .modal-card{max-width:100%; max-height:100vh; height:100%; border-radius:0;}
+  .modal-title{font-size:13.5px;}
+  .modal-body{padding:16px;}
+  .coach-stats{grid-template-columns:repeat(3,1fr);}
+  .coach-stat{padding:9px 6px;}
+  .coach-stat-value{font-size:16px;}
+  .coach-stat-label{font-size:8.5px;}
+  .week-card{flex:0 0 92px; padding:10px 8px;}
+  .week-km{font-size:18px;}
+  .plan-card{padding:16px;}
+  .plan-num{font-size:28px;}
+  .wo-code{font-size:11px; padding:9px 10px;}
+  .copy-btn{padding:11px; font-size:12px;}
+  .sync-note{padding:14px; font-size:12.5px;}
+
+  .table-wrap{padding:4px 10px; margin:0 -2px;}
+  .runs-table{font-size:11.5px;}
+  .runs-table th{padding:7px 6px; font-size:9.5px;}
+  .runs-table td{padding:8px 6px; font-size:11.5px;}
+  .runs-table .name-cell{max-width:110px;}
+
+  .tool-card{padding:16px;}
+  .tool-title{font-size:13.5px;}
+  .dropzone{padding:20px 12px; font-size:12.5px;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid label{grid-column:span 1;}
+  input,select{font-size:16px; padding:11px 10px;}
+  button.primary{padding:13px; font-size:13.5px;}
+
+  footer p{font-size:10.5px;}
+}
+.tool-card{border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-elev); padding:20px;}
+.tool-title{font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; letter-spacing:.02em; margin-bottom:12px;}
+.dropzone{
+  border:1.5px dashed var(--line); border-radius:10px; padding:24px 16px; text-align:center;
+  cursor:pointer; transition:border-color .2s, background .2s; font-size:13px; color:var(--text-muted);
+}
+.dropzone:hover, .dropzone.drag{border-color:var(--easy); background:#E6A93F0c;}
+.dropzone b{color:var(--text);}
+input[type=file]{display:none;}
+.status-msg{margin-top:10px; font-size:12px; font-family:'IBM Plex Mono',monospace; color:var(--long); display:none;}
+.status-msg.err{color:var(--hard);}
+
+.api-experiment{
+  margin-top:18px; padding-top:16px; border-top:1px dashed var(--line);
+}
+.api-experiment-title{font-family:'Oswald',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;}
+.api-experiment-note{font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-bottom:12px;}
+
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.form-grid label{grid-column:span 2; font-size:11.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.06em; margin-top:4px;}
+.form-grid label:first-of-type{margin-top:0;}
+input,select{
+  width:100%; background:var(--bg-elev-2); border:1px solid var(--line); border-radius:8px;
+  padding:9px 10px; color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px;
+}
+input:focus,select:focus{outline:none; border-color:var(--easy);}
+button.primary{
+  margin-top:14px; width:100%; background:var(--easy); color:#0E2226; border:none; border-radius:8px;
+  padding:11px; font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; text-transform:uppercase;
+  letter-spacing:.03em; cursor:pointer; transition:opacity .2s;
+}
+button.primary:hover{opacity:.88;}
+
+footer{padding:30px 0 10px; text-align:center;}
+footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="modal-overlay" id="guideModal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Chase The Banana 🍌 — Guide til testpersoner</div>
+        <button class="modal-close" id="guideClose">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <p class="guide-intro">Chase The Banana er en løbetræningsapp, der bygger dit ugentlige træningsprogram ud fra dine egne løbedata — fitness, træthed, tempo-zoner og volumen — i stedet for en fast skabelon. Den er stadig under test, og din feedback er guld værd.</p>
+
+        <h3>1. Sådan kommer du i gang</h3>
+        <ul class="guide-list">
+          <li>Åbn linket i din telefons browser (Safari eller Chrome)</li>
+          <li>Tryk <b>"Føj til hjemmeskærm"</b> (iPhone: Del-ikon → Føj til hjemmeskærm / Android: menu → Installer app), så får du et rigtigt app-ikon</li>
+          <li>Appen virker offline efter første åbning og husker dine data på selve telefonen</li>
+        </ul>
+        <p class="guide-p">Første gang du åbner den, er der ingen data endnu — du bliver mødt af en kort velkomstbesked, der peger på import-feltet.</p>
+
+        <h3>2. Opret konto på intervals.icu (anbefalet — også hvis du kun bruger Garmin)</h3>
+        <p class="guide-p">Chase The Banana er bygget til at hente data fra <b>intervals.icu</b> — en gratis tredjeparts-tjeneste. Dette er vejen, vi anbefaler til <b>alle</b>: tager 5 minutter, virker fint fra telefonen, og giver bedre data end Garmin selv kan levere.</p>
+        <p class="guide-p"><b>Opret konto</b></p>
+        <ol class="guide-list">
+          <li>Gå til intervals.icu og opret en gratis konto (log ind med Garmin Connect, Strava eller e-mail)</li>
+          <li>Under oprettelsen kan du forbinde Garmin Connect med det samme — ellers gør du det bagefter under Indstillinger</li>
+        </ol>
+        <p class="guide-p"><b>Forbind din Garmin</b></p>
+        <ol class="guide-list">
+          <li>Log ind på intervals.icu → profilikon øverst → Settings (Indstillinger)</li>
+          <li>Find Integrations/Connections og vælg Garmin Connect</li>
+          <li>Godkend adgangen hos Garmin ("Allow"/"Agree")</li>
+          <li>Vælg <b>"Upload planned workout"</b> i Garmin-forbindelsen — det gør, at planlagte pas fra intervals.icu automatisk lander på dit ur</li>
+        </ol>
+        <p class="guide-p">Når forbindelsen står: dine <b>gennemførte</b> løbeture synkroniseres fra Garmin til intervals.icu (typisk indenfor få minutter), og <b>planlagte pas</b> du opretter i intervals.icu's kalender sendes den anden vej, ud til uret.</p>
+        <div class="guide-callout">Tjek at det virker: Lav en testaktivitet på uret, og se om den dukker op på intervals.icu's Aktiviteter-side indenfor 10-15 minutter. Sker det ikke, prøv Settings → Integrations → Garmin Connect → Reconnect.</div>
+
+        <h3>3. Hent dine data i appen</h3>
+        <p class="guide-p"><b>Anbefalet: hent direkte via intervals.icu's API — ingen fil nødvendig.</b> Testet og bekræftet virkende:</p>
+        <ol class="guide-list">
+          <li>Find dit <b>Athlete ID</b> — står i din intervals.icu-URL (fx i250371)</li>
+          <li>Generér en <b>API-nøgle</b>: intervals.icu → Settings → nederst → "Developer Settings" → opret en nøgle</li>
+          <li>Indtast begge dele under "Opdater med nye data" → "🧪 Eksperimentelt: hent direkte fra intervals.icu"</li>
+          <li>Sæt "Hvor langt tilbage (måneder)" — 36 er standard</li>
+          <li>Tryk "Hent aktiviteter direkte"</li>
+        </ol>
+        <p class="guide-p">Appen genberegner automatisk tærskelfart, tempo-zoner, ugentligt volumen og Fitness/Trætheed. Leverer intervals.icu ikke Fitness/Trætheed for den konkrete forbindelse, beregner appen dem selv — tallene bliver aldrig stående på 0.</p>
+        <div class="guide-callout">Din API-nøgle gemmes kun lokalt på din egen enhed — del den ikke med andre, og du kan altid regenerere/slette den på intervals.icu.</div>
+
+        <p class="guide-p"><b>Backup: CSV-import.</b> Virker API-hentningen ikke, kan du stadig trække en CSV-fil ind i samme boks:</p>
+        <ol class="guide-list">
+          <li>Gå til din Aktivitets-liste på intervals.icu</li>
+          <li>Vælg den periode, du vil have med</li>
+          <li>Brug Download / Export → CSV (i aktivitetslisten, eller under Settings → Data → Export)</li>
+          <li>Træk den downloadede fil ind i appens import-felt</li>
+        </ol>
+        <div class="guide-callout"><b>Vil du hellere eksportere direkte fra Garmin Connect uden om intervals.icu?</b> Det kræver reelt en <b>computer</b> — "Export CSV"-linket på Garmins Aktivitetsliste findes kun i desktop-visningen, og selve Garmin Connect-appen kan slet ikke eksportere filer. Har du kun en telefon, er intervals.icu-vejen ovenfor (API eller CSV) i praksis den eneste, der virker uden en PC.<br><br>Sidste udvej fra mobilen uden intervals.icu: Garmin Connect → profil → <b>Account Settings → "Export Your Data"</b> — fuld databackup på mail indenfor 24-48 timer, men langsom og uden tærskelfart/zoner.</div>
+        <p class="guide-p">Appen genkender selv, om en fil er fra intervals.icu eller Garmins eget format.</p>
+        <p class="guide-p">Du kan også tilføje et enkelt løb manuelt — det opdaterer nu både volumen <b>og</b> Fitness/Trætheed med det samme.</p>
+        <div class="guide-callout">Data ligger kun lokalt på din egen telefon/browser — vi (eller andre brugere) kan ikke se dine tal.</div>
+
+        <h3>4. Dashboard: Fitness, Trætheed, Form</h3>
+        <table class="guide-table">
+          <tr><td><b>Fitness (CTL)</b></td><td>Din langsigtede, opbyggede kapacitet (42-dages glidende gennemsnit af belastning)</td></tr>
+          <tr><td><b>Trætheed (ATL)</b></td><td>Din kortsigtede friskhed/træthed (7-dages glidende gennemsnit)</td></tr>
+          <tr><td><b>Form</b></td><td>Fitness minus Trætheed — positiv = frisk, negativ = du bærer træthed</td></tr>
+        </table>
+        <p class="guide-p">Samme model, som intervals.icu selv bruger. Tallene er relative til dig selv — ingen fast skala at sammenligne med andre løbere.</p>
+
+        <h3>5. Sæt dit mål</h3>
+        <p class="guide-p">Under "Dit mål" vælger du niveau (Øvet/Nybegynder), distance (5 km / 10 km / halvmaraton), løbsdato, valgfrit måltid, og træningspas pr. uge (2-6). Appen bygger en periodiseret plan (Opbygning → Skarphed → Nedtrapning → Løbsuge) med automatisk lettere uger hver 4. uge og en grænse for, hvor hurtigt belastningen må stige.</p>
+
+        <h3>6. Din uge</h3>
+        <p class="guide-p">De konkrete pas for den kommende uge — typisk rolig tur (med stigningsløb), tempo-/kvalitetspas og lang tur. Hvert pas viser varighed, afstand, belastning, intensitet, zonefordeling og en kort begrundelse. To måder at få det på uret:</p>
+        <ul class="guide-list">
+          <li><b>"Kopiér til intervals.icu"</b> — kopierer teksten, du limer den ind i kalenderen selv</li>
+          <li><b>"🧪 Send til intervals.icu"</b> — vælg en dato og tryk send, så lander pas'et direkte på kalenderen (kræver Athlete ID + API-nøgle fra afsnit 3 — testet og bekræftet virkende)</li>
+        </ul>
+        <p class="guide-p">Begge veje synkroniserer videre til uret, da din Garmin allerede er forbundet til intervals.icu.</p>
+
+        <h3>7. Begynderprogram</h3>
+        <p class="guide-p">Niveau "Nybegynder" erstatter ugeplanen med et 8-ugers gå/løb-program ("Couch to 5K"-princip), uafhængigt af tærskeldata. Kan også kopieres til intervals.icu. Efter uge 8 løber du sammenhængende — skift så niveau til "Øvet".</p>
+
+        <h3>8. Programoversigt</h3>
+        <p class="guide-p">En vandret tidslinje med hver uge frem til løbsdagen: fase, målvolumen, lang tur og "Rampe" (ugentlig ændring i Fitness, holdt under en grænse for at mindske skadesrisiko).</p>
+
+        <h3>9. Kost op mod løbsdagen</h3>
+        <p class="guide-p">Skifter automatisk fokus alt efter, hvor tæt du er på løbsdagen — hverdagskost, race week, dagen før, løbsdagen og restitution.</p>
+
+        <h3>10. Seneste løb</h3>
+        <p class="guide-p">Tabel over dine seneste løbeture: dato, pastype, zone, distance, tempo, puls og belastning.</p>
+
+        <h3>Vigtige forbehold</h3>
+        <ul class="guide-list">
+          <li><b>Ikke professionel trænerrådgivning</b> — generelle retningslinjer baseret på dine egne data</li>
+          <li><b>Belastningsmodellen er en tilnærmelse</b> — estimeret ud fra din egen historik</li>
+          <li><b>Zone-grænserne</b> bruger dine egne zoner (hvis importeret) eller en generisk model ud fra tærskelfart</li>
+          <li>Erstatter ikke lægefaglig rådgivning — stop og søg hjælp ved smerter eller uregelmæssigheder</li>
+        </ul>
+
+        <h3>Hvad vi gerne vil have feedback på</h3>
+        <ul class="guide-list">
+          <li>Var det til at finde ud af at oprette intervals.icu-kontoen og forbinde Garmin?</li>
+          <li>Føles den ugentlige plan realistisk og trænbar?</li>
+          <li>Er tempoerne og zonerne til at forstå?</li>
+          <li>Virker import/eksport-funktionerne uden problemer på din telefon?</li>
+          <li>Er der noget, der er forvirrende, eller som du savner?</li>
+        </ul>
+
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <div class="eyebrow" id="eyebrowDate">TRÆNINGSOPTIMERING</div>
+    <div class="header-row">
+      <div>
+        <h1>Chase The Banana 🍌</h1>
+        <div class="subtitle">Monkeys don't cramp — din løbsform, uge for uge</div>
+      </div>
+      <div class="profile-chip">
+        <span id="distChip">Halvmaraton</span>
+        <span id="freqChip">3 gange/uge</span>
+        <span id="totalRunsChip">— løb</span>
+        <button class="guide-btn" id="guideBtn">📖 Guide</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="onboard-banner" id="onboardBanner" style="display:none;">
+    <div class="onboard-title">Velkommen — ingen løbedata endnu</div>
+    <div class="onboard-text">Appen bygger dit program ud fra dine egne data. Importér en CSV-eksport fra intervals.icu eller Garmin Connect for at komme i gang — find feltet under "Opdater med nye data" længere nede, eller tryk her for at hoppe direkte dertil.</div>
+    <button class="onboard-btn" id="onboardScrollBtn">Gå til import</button>
+  </div>
+
+  <div class="hero">
+    <div class="splits">
+      <div class="split fitness">
+        <div class="split-label">Fitness (CTL)</div>
+        <div class="split-value mono" id="fitnessVal">—</div>
+      </div>
+      <div class="split fatigue">
+        <div class="split-label">Træthed (ATL)</div>
+        <div class="split-value mono" id="fatigueVal">—</div>
+      </div>
+      <div class="split form" id="formSplit">
+        <div class="split-label">Form (Fitness − Træthed)</div>
+        <div class="split-value mono" id="formVal">—</div>
+      </div>
+    </div>
+    <div class="verdict" id="verdictBox">Beregner din form…</div>
+    <div class="insight" id="insightBox"></div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <div class="section-title">Dit mål</div>
+      <div class="section-sub" id="goalCountdown">INGEN DATO SAT</div>
+    </div>
+    <div class="tool-card">
+      <div class="form-grid">
+        <label>Niveau</label>
+        <select id="runnerLevel">
+          <option value="ovet">Øvet — byg planen på mine egne data</option>
+          <option value="nybegynder">Nybegynder — gå/løb-opbygning fra bunden</option>
+        </select>
+        <label>Distance</label>
+        <select id="goalDistance">
+          <option value="5">5 km</option>
+          <option value="10">10 km</option>
+          <option value="21.0975" selected>Halvmaraton (21,1 km)</option>
+        </select>
+        <label>Løbsdato</label>
+        <input type="date" id="goalDate">
+        <label>Måltid, valgfrit (t:mm, fx 1:45)</label>
+        <input type="text" id="goalTime" placeholder="Lad stå tom for 'bare gennemføre'">
+        <label>Træningspas pr. uge</label>
+        <select id="sessionsPerWeek">
+          <option value="2">2 gange</option>
+          <option value="3">3 gange</option>
+          <option value="4">4 gange</option>
+          <option value="5">5 gange</option>
+          <option value="6">6 gange</option>
+        </select>
+      </div>
+      <button class="primary" id="goalSubmit">Gem mål og byg program</button>
+      <div class="status-msg" id="goalStatus"></div>
+    </div>
+  </section>
+
+  <section id="programSection" style="display:none;">
+    <div class="section-head">
+      <div class="section-title">Programoversigt</div>
+      <div class="section-sub" id="programSub"></div>
+    </div>
+    <div class="program-scroll" id="programScroll"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="section-title">Kost op mod løbsdagen</div>
+      <div class="section-sub" id="nutritionSub">GENEREL SPORTSERNÆRING</div>
+    </div>
+    <div class="plan-grid" id="nutritionGrid"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="section-title">Zonefordeling · seneste 8 uger</div>
+      <div class="section-sub" id="zoneTotalMin">— MIN I ALT</div>
+    </div>
+    <div class="ladder">
+      <div class="ladder-track" id="ladderTrack"></div>
+      <div class="ladder-legend" id="ladderLegend"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="section-title">Volumen · seneste 20 uger</div>
+      <div class="section-sub">KM PR. UGE</div>
+    </div>
+    <div class="chart-card"><div class="chart-inner"><canvas id="volumeChart"></canvas></div></div>
+    <div class="section-head" style="margin-top:22px;">
+      <div class="section-title">Fitness vs. træthed over tid</div>
+      <div class="section-sub">INTERVALS.ICU-MODEL</div>
+    </div>
+    <div class="chart-card"><div class="chart-inner"><canvas id="formChart"></canvas></div></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="section-title">Din uge</div>
+      <div class="section-sub" id="planPhase">SIMULERET PROGRAM</div>
+    </div>
+    <div id="advancedPlanWrap">
+      <div class="coach-stats" id="coachStats"></div>
+      <div class="scale-note">Fitness/Trætheed/Form er intervals.icu's egen CTL/ATL/TSB-model (42- og 7-dages glidende gennemsnit af belastning). Tallene er relative til dig selv — der er ingen fast skala at sammenligne med andre løbere.</div>
+      <div class="plan-grid" id="planGrid"></div>
+      <div class="sync-note">
+        <b>Sådan lander det på dit Garmin-ur:</b> Jeg kan ikke skrive direkte til uret herfra — der findes ikke en åben, offentlig vej til det. Men teksten under hvert pas er skrevet i intervals.icu's eget workout-format, som allerede synkroniserer strukturerede træningspas til Garmin.
+        <ol>
+          <li>Kopiér teksten under det pas, du vil lave</li>
+          <li>Gå til Kalender i intervals.icu → opret et planlagt pas på den ønskede dato → indsæt teksten i workout builderen</li>
+          <li>Da din Garmin allerede er forbundet til intervals.icu, sendes det strukturerede pas automatisk til uret, så du kan følge det undervejs</li>
+        </ol>
+      </div>
+    </div>
+    <div id="beginnerPlanWrap" style="display:none;">
+      <div class="beginner-note">Bygget på gå/løb-opbygning — ikke dine (eller nogens) tærskeldata. Efter uge 8 løber du sammenhængende; skift niveau til "Øvet" og importér dine første løbeture, så tager den datadrevne motor over resten af vejen mod målet.</div>
+      <div class="beginner-table-wrap">
+        <table class="beginner-table" id="beginnerTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="section-title">Seneste løb</div>
+      <div class="section-sub" id="thresholdChip">TÆRSKELFART —</div>
+    </div>
+    <div class="table-wrap">
+      <table class="runs-table">
+        <thead><tr>
+          <th>Dato</th><th>Pas</th><th>Zone</th><th>Km</th><th>Tempo</th><th>Puls</th><th>Load</th>
+        </tr></thead>
+        <tbody id="runsTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="importSection">
+    <div class="section-head">
+      <div class="section-title">Opdater med nye data</div>
+      <div class="section-sub">CSV · MANUEL</div>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-title">Importér CSV (intervals.icu / Garmin)</div>
+        <div class="dropzone" id="dropzone">
+          <div>Træk en CSV-fil hertil, eller <b>klik for at vælge fil</b></div>
+          <input type="file" id="fileInput" accept=".csv">
+        </div>
+        <div class="status-msg" id="importStatus"></div>
+
+        <div class="api-experiment">
+          <div class="api-experiment-title">🧪 Eksperimentelt: hent direkte fra intervals.icu</div>
+          <div class="api-experiment-note">Ingen CSV nødvendig — men dette er utestet, og kan simpelthen fejle pga. browserens sikkerhedsregler (CORS). Din API-nøgle gemmes kun lokalt på denne enhed.</div>
+          <div class="form-grid">
+            <label>Athlete ID (fx i250371)</label>
+            <input type="text" id="apiAthleteId" placeholder="i250371">
+            <label>API-nøgle (Settings → Developer Settings på intervals.icu)</label>
+            <input type="password" id="apiKey" placeholder="Din API-nøgle">
+            <label>Hvor langt tilbage (måneder)</label>
+            <input type="number" id="apiMonthsBack" value="36" min="1" max="60">
+          </div>
+          <button class="primary" id="apiFetchBtn">Hent aktiviteter direkte</button>
+          <div class="status-msg" id="apiFetchStatus"></div>
+        </div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-title">Tilføj et løb manuelt</div>
+        <div class="form-grid">
+          <label>Dato</label>
+          <input type="date" id="qaDate">
+          <label>Type</label>
+          <select id="qaType">
+            <option value="Rolig">Rolig / let</option>
+            <option value="Tempo">Tempo / kvalitet</option>
+            <option value="Lang">Lang tur</option>
+          </select>
+          <label>Distance (km)</label>
+          <input type="number" step="0.1" id="qaDist" placeholder="10.0">
+          <label>Varighed (min)</label>
+          <input type="number" step="1" id="qaDur" placeholder="55">
+        </div>
+        <button class="primary" id="qaSubmit">Tilføj løb</button>
+        <div class="status-msg" id="qaStatus"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Beregningerne er generelle retningslinjer baseret på dine egne træningsdata — ikke professionel trænerrådgivning.<br>Fitness/træthed-tal er overført direkte fra din intervals.icu-eksport.</p>
+  </footer>
+</div>
+
+<script>
+const EMPTY_DATA = {
+  athleteId: null, generatedFrom: null,
+  thresholdPaceMinKm: 5.0, thresholdPaceStr: '5:00',
+  fitness: 0, fatigue: 0, form: 0, avgWeeklyKm4w: 0, recentLongRunKm: 0, totalRunsAllTime: 0,
+  zoneDistLast8wMin: {}, weekly: [], fitnessFatigue: [], recentRuns: []
+};
+
+const ZONE_COLORS = {Z1:'var(--z1)', Z2:'var(--z2)', Z3:'var(--z3)', Z4:'var(--z4)', Z5:'#B8324A', Z6:'#8B1E3F', Z7:'#5C0F28'};
+const ZONE_NAMES = {Z1:'Restitution', Z2:'Aerobt', Z3:'Tærskel-nær', Z4:'Tærskel/hårdt'};
+
+let DATA = null;
+let GOAL = null; // {raceDate:'YYYY-MM-DD', targetTimeSec: number|null}
+let PROGRAM = null; // computed weeks array
+let SESSIONS_PER_WEEK = 3;
+let volumeChartInstance = null, formChartInstance = null;
+
+function mmss(paceMin){
+  if(paceMin==null || isNaN(paceMin)) return '—';
+  const m = Math.floor(paceMin);
+  let s = Math.round((paceMin-m)*60);
+  let mm = m;
+  if(s===60){mm+=1; s=0;}
+  return mm+':'+String(s).padStart(2,'0');
+}
+
+function fmtDateDK(iso){
+  const d = new Date(iso+'T00:00:00');
+  const days=['man','tir','ons','tor','fre','lør','søn'];
+  return d.toLocaleDateString('da-DK',{day:'2-digit',month:'short'});
+}
+
+function isoLocal(d){
+  const dt = new Date(d);
+  const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,'0'), day = String(dt.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function hasClaudeStorage(){
+  return typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+}
+
+/* Virker både som Claude-artifact (window.storage, adskilt pr. bruger automatisk)
+   og som selvstændig PWA (localStorage, adskilt pr. telefon/browser). */
+async function storageGet(key){
+  if(hasClaudeStorage()){
+    try{
+      const res = await window.storage.get(key, false);
+      return res ? res.value : null;
+    }catch(e){ return null; }
+  }
+  try{ return localStorage.getItem('hm_'+key); }catch(e){ return null; }
+}
+async function storageSet(key, value){
+  if(hasClaudeStorage()){
+    try{ await window.storage.set(key, value, false); return true; }catch(e){ return false; }
+  }
+  try{ localStorage.setItem('hm_'+key, value); return true; }catch(e){ return false; }
+}
+
+async function loadState(){
+  let stored = null;
+  try{
+    const raw = await storageGet('run_dataset');
+    if(raw) stored = JSON.parse(raw);
+  }catch(e){ stored = null; }
+  DATA = stored || EMPTY_DATA;
+  if(!DATA.generatedFrom) DATA.generatedFrom = isoLocal(new Date());
+  try{
+    const raw = await storageGet('race_goal');
+    if(raw) GOAL = JSON.parse(raw);
+  }catch(e){ GOAL = null; }
+  if(GOAL){
+    document.getElementById('goalDate').value = GOAL.raceDate;
+    if(GOAL.targetTimeSec) document.getElementById('goalTime').value = secToHms(GOAL.targetTimeSec);
+    if(GOAL.distanceKm) document.getElementById('goalDistance').value = String(GOAL.distanceKm);
+    if(GOAL.level) document.getElementById('runnerLevel').value = GOAL.level;
+  }
+  try{
+    const raw = await storageGet('sessions_per_week');
+    if(raw) SESSIONS_PER_WEEK = parseInt(raw, 10) || 3;
+  }catch(e){ SESSIONS_PER_WEEK = 3; }
+  document.getElementById('sessionsPerWeek').value = String(SESSIONS_PER_WEEK);
+  render();
+}
+
+async function saveState(){ await storageSet('run_dataset', JSON.stringify(DATA)); }
+async function saveGoal(){ await storageSet('race_goal', JSON.stringify(GOAL)); }
+async function saveSessionsPerWeek(){ await storageSet('sessions_per_week', String(SESSIONS_PER_WEEK)); }
+
+function secToHms(sec){
+  const h = Math.floor(sec/3600), m = Math.round((sec%3600)/60);
+  return h+':'+String(m).padStart(2,'0');
+}
+function parseGoalTime(str){
+  if(!str || !str.trim()) return null;
+  const parts = str.trim().split(':').map(x=>parseInt(x,10));
+  let sec = null;
+  if(parts.length===2 && !isNaN(parts[0]) && !isNaN(parts[1])) sec = parts[0]*3600 + parts[1]*60;
+  else if(parts.length===3 && parts.every(x=>!isNaN(x))) sec = parts[0]*3600 + parts[1]*60 + parts[2];
+  if(sec===null || sec<600 || sec>21600) return NaN; // sane range på tværs af 5km-halvmaraton: 10min-6t
+  return sec;
+}
+
+function raceDistanceKm(){ return (GOAL && GOAL.distanceKm) ? GOAL.distanceKm : 21.0975; }
+function raceLabel(){
+  const km = raceDistanceKm();
+  if(Math.abs(km-21.0975)<0.05) return 'Halvmaraton';
+  if(Math.abs(km-Math.round(km))<0.01) return Math.round(km)+' km';
+  return km.toFixed(1)+' km';
+}
+function isBeginner(){ return GOAL && GOAL.level==='nybegynder'; }
+
+/* ---------- PROGRAM / PERIODISERING ---------- */
+function mondayOf(d){
+  const dt = new Date(d); dt.setHours(0,0,0,0);
+  const day = (dt.getDay()+6)%7;
+  dt.setDate(dt.getDate()-day);
+  return dt;
+}
+
+function buildProgram(){
+  if(!GOAL || !GOAL.raceDate) { PROGRAM = null; return; }
+  const today = new Date();
+  const monday = mondayOf(today);
+  const race = new Date(GOAL.raceDate+'T00:00:00');
+  const msWeek = 7*86400000;
+  let weeksToRace = Math.round((mondayOf(race)-monday)/msWeek) + 1;
+  if(weeksToRace < 1){ PROGRAM = null; return; }
+
+  const currentAvg = Math.max(DATA.avgWeeklyKm4w, 8);
+  const currentLong = Math.max(DATA.recentLongRunKm, 6);
+  const dist = raceDistanceKm();
+  const caps = dist<=5 ? {longCap:10, volCap:28} : dist<=10 ? {longCap:14, volCap:36} : {longCap:19, volCap:44};
+  const peakVolume = Math.min(Math.max(currentAvg*1.5, currentAvg+8), caps.volCap);
+  const peakLong = Math.min(Math.max(currentLong*1.25, currentLong+3), caps.longCap);
+  const taperWeeks = weeksToRace>=8 ? 2 : (weeksToRace>=4 ? 1 : 0);
+  const buildWeeks = Math.max(1, weeksToRace - taperWeeks - 1);
+
+  const weeks = [];
+  for(let i=0;i<weeksToRace;i++){
+    const weeksFromRace = weeksToRace-1-i;
+    const startDate = new Date(monday.getTime() + i*msWeek);
+    let phase, volKm, longKm;
+    if(weeksFromRace===0){
+      phase='Løbsuge'; volKm=Math.round(peakVolume*0.25); longKm=0;
+    } else if(weeksFromRace<=taperWeeks){
+      phase='Nedtrapning';
+      const taperT = weeksFromRace/taperWeeks;
+      volKm = Math.round(peakVolume*(0.55+0.35*taperT));
+      longKm = Math.round(peakLong*(0.5+0.35*taperT)*2)/2;
+    } else {
+      const idx = buildWeeks - (weeksFromRace-taperWeeks);
+      const t = buildWeeks>1 ? Math.min(idx/(buildWeeks-1),1) : 1;
+      phase = t>0.55 ? 'Skarphed' : 'Opbygning';
+      volKm = Math.round(currentAvg + (peakVolume-currentAvg)*t);
+      longKm = Math.round((currentLong + (peakLong-currentLong)*t)*2)/2;
+      if(idx>0 && idx%4===3){ volKm=Math.round(volKm*0.8); longKm=Math.round(longKm*0.85*2)/2; }
+    }
+    weeks.push({startDate, phase, volKm, longKm, isCurrent:i===0, isRace:weeksFromRace===0});
+  }
+  PROGRAM = {weeks, weeksToRace};
+  simulateProgram();
+}
+
+/* Estimate this athlete's own training-load-per-km from their real history */
+function estimateLoadPerKm(){
+  const recent = DATA.weekly.slice(-10);
+  let totalLoad=0, totalKm=0;
+  recent.forEach(w=>{ if(w.load && w.distance_km){ totalLoad+=w.load; totalKm+=w.distance_km; } });
+  return totalKm>0 ? totalLoad/totalKm : 6.5;
+}
+
+/* Simulate Fitness (CTL) / Fatigue (ATL) forward week by week using the same
+   exponentially-weighted model intervals.icu itself uses (42/7 day time constants),
+   then automatically pull back any week whose ramp rate looks too aggressive. */
+function sessionDayIndices(n){
+  // spreder N pas jævnt ud over ugens 7 dage (0=mandag..6=søndag)
+  n = Math.max(1, Math.min(n, 7));
+  const days = [];
+  for(let i=0;i<n;i++) days.push(Math.round(i*(7/n)));
+  return [...new Set(days)];
+}
+
+function simulateProgram(){
+  if(!PROGRAM) return;
+  const loadPerKm = estimateLoadPerKm();
+  const rampCap = 6.5; // conservative weekly CTL ramp ceiling to reduce injury risk
+  const dayIdx = sessionDayIndices(SESSIONS_PER_WEEK);
+
+  for(let pass=0; pass<3; pass++){
+    let ctl = DATA.fitness, atl = DATA.fatigue;
+    let adjustedAny = false;
+    PROGRAM.weeks.forEach(w=>{
+      const weeklyLoad = w.isRace ? w.volKm*loadPerKm*1.15 : w.volKm*loadPerKm;
+      const dayLoads = [0,0,0,0,0,0,0];
+      dayIdx.forEach(d=> dayLoads[d] = weeklyLoad/dayIdx.length);
+      const ctlStart = ctl;
+      dayLoads.forEach(load=>{
+        ctl = ctl + (load-ctl)/42;
+        atl = atl + (load-atl)/7;
+      });
+      w.projFitness = +ctl.toFixed(1);
+      w.projFatigue = +atl.toFixed(1);
+      w.projForm = +(ctl-atl).toFixed(1);
+      w.ramp = +(ctl-ctlStart).toFixed(1);
+      if(!w.isRace && w.phase!=='Nedtrapning' && w.phase!=='Løbsuge' && w.ramp>rampCap){
+        w.volKm = Math.round(w.volKm*0.85);
+        w.longKm = Math.round(w.longKm*0.9*2)/2;
+        adjustedAny = true;
+      }
+    });
+    if(!adjustedAny) break;
+  }
+}
+
+/* Polarization ratio (easy Z1-Z2 minutes ÷ hard Z3-Z5 minutes) from real zone-minute totals */
+function computePolarizationFromZones(zoneMin){
+  const easy = (zoneMin.Z1||0) + (zoneMin.Z2||0);
+  const hard = (zoneMin.Z3||0) + (zoneMin.Z4||0) + (zoneMin.Z5||0) + (zoneMin.Z6||0);
+  return hard>0 ? easy/hard : null;
+}
+
+function renderGoal(){
+  const countdown = document.getElementById('goalCountdown');
+  const progSection = document.getElementById('programSection');
+  if(!GOAL || !GOAL.raceDate){
+    countdown.textContent = 'INGEN DATO SAT';
+    progSection.style.display = 'none';
+    return;
+  }
+  buildProgram();
+  if(!PROGRAM){
+    countdown.textContent = 'LØBSDATO ER OVERSKREDET';
+    progSection.style.display = 'none';
+    return;
+  }
+  const raceD = new Date(GOAL.raceDate+'T00:00:00');
+  const dateStr = raceD.toLocaleDateString('da-DK',{day:'2-digit',month:'long',year:'numeric'});
+  let txt = PROGRAM.weeksToRace + ' UGER TIL ' + dateStr.toUpperCase();
+  if(GOAL.targetTimeSec){
+    const goalPace = (GOAL.targetTimeSec/60)/raceDistanceKm();
+    txt += ' · MÅLFART ~' + mmss(goalPace) + '/KM';
+  }
+  countdown.textContent = txt;
+
+  progSection.style.display = 'block';
+  document.getElementById('programSub').textContent = PROGRAM.weeks.length + ' UGER FREM MOD LØBSDAG';
+  const scroll = document.getElementById('programScroll');
+  scroll.innerHTML = '';
+  PROGRAM.weeks.forEach(w=>{
+    const div = document.createElement('div');
+    div.className = 'week-card' + (w.isCurrent?' current':'') + (w.isRace?' race':'');
+    const rampStr = w.ramp!=null ? ((w.ramp>=0?'+':'')+w.ramp.toFixed(1)) : '—';
+    div.innerHTML = `
+      <div class="week-phase">${w.phase}</div>
+      <div class="week-date">${fmtDateDK(isoLocal(w.startDate))}</div>
+      <div class="week-km mono">${w.isRace? (Number.isInteger(raceDistanceKm())?raceDistanceKm():raceDistanceKm().toFixed(1)):w.volKm}<small> km</small></div>
+      <div class="week-long">${w.isRace? 'Løbsdag' : 'Lang tur '+w.longKm.toFixed(1)+' km'}</div>
+      <div class="week-ramp mono">Rampe ${rampStr}</div>
+    `;
+    scroll.appendChild(div);
+  });
+}
+
+function setupGoalForm(){
+  document.getElementById('goalSubmit').addEventListener('click', async ()=>{
+    const dateVal = document.getElementById('goalDate').value;
+    const timeVal = document.getElementById('goalTime').value;
+    const statusEl = document.getElementById('goalStatus');
+    statusEl.style.display='block';
+    if(!dateVal){
+      statusEl.className='status-msg err'; statusEl.textContent='Vælg en løbsdato.'; return;
+    }
+    const raceD = new Date(dateVal+'T00:00:00');
+    if(raceD < mondayOf(new Date())){
+      statusEl.className='status-msg err'; statusEl.textContent='Datoen er allerede overstået.'; return;
+    }
+    const sec = parseGoalTime(timeVal);
+    if(isNaN(sec)){
+      statusEl.className='status-msg err'; statusEl.textContent='Måltid ser forkert ud — brug t:mm, fx 1:45.'; return;
+    }
+    const distanceKm = parseFloat(document.getElementById('goalDistance').value) || 21.0975;
+    const level = document.getElementById('runnerLevel').value || 'ovet';
+    GOAL = {raceDate:dateVal, targetTimeSec: sec, distanceKm, level};
+    SESSIONS_PER_WEEK = parseInt(document.getElementById('sessionsPerWeek').value, 10) || 3;
+    await saveGoal();
+    await saveSessionsPerWeek();
+    render();
+    statusEl.className='status-msg'; statusEl.textContent='Mål gemt — programmet er bygget herunder.';
+  });
+
+  document.getElementById('sessionsPerWeek').addEventListener('change', async (e)=>{
+    SESSIONS_PER_WEEK = parseInt(e.target.value, 10) || 3;
+    await saveSessionsPerWeek();
+    render();
+  });
+}
+
+/* ---------- ERNÆRING ---------- */
+const NUTRITION_CARDS = {
+  everyday: {
+    kind:'HVERDAG', cls:'', title:'Kost i opbygningen',
+    points:[
+      'Nok kulhydrat til at understøtte volumen — det behøver ikke måles på gram, men lavt kulhydratindtag på dage med kvalitetspas mærkes typisk som tunge ben',
+      'Protein fordelt over dagen (fx til alle måltider), særligt vigtigt efter lange eller hårde pas',
+      'Almindelig, varieret kost er nok — ingen grund til restriktion eller særlige diæter for at komme i mål',
+      'Jern og D-vitamin er ofte lavt hos løbere, uanset køn — værd at holde øje med, evt. via en blodprøve hvis du er uforklarligt træt'
+    ]
+  },
+  specific: {
+    kind:'SKARPHED', cls:'tempo', title:'Når kvalitetspas fylder mere',
+    points:[
+      'Spis kulhydrat før hårde/lange pas, så du kan gennemføre intensiteten',
+      'Genopfyld med kulhydrat + protein indenfor en times tid efter hårde pas — det fremskynder restitutionen til næste pas',
+      'Brug de lange ture til at øve det, du evt. vil indtage på løbsdagen (gel, sportsdrik), så maven kender det'
+    ]
+  },
+  raceweek: {
+    kind:'SIDSTE UGE', cls:'long', title:'Race week',
+    points: dist => dist >= 15
+      ? [
+          `${raceLabel()} kræver ikke klassisk "udtømning + opladning" — det er en maraton-ting. Løft blot kulhydratandelen lidt de sidste 2-3 dage (groft: lidt mere ris/pasta/kartofler end normalt)`,
+          'Skru lidt ned for fedt og fiber de sidste par dage — det letter fordøjelsen uden at gå på kompromis med energien',
+          'Undgå helt nye retter eller restauranter den sidste uge',
+          'Hold hydrering og salt oppe, især hvis det er varmt vejr'
+        ]
+      : [
+          `Ved ${raceLabel()} er der ikke brug for særlig kulhydrat-opladning — almindelig, kulhydratrig kost de sidste dage er rigeligt`,
+          'Undgå helt nye retter eller restauranter den sidste uge',
+          'Hold hydrering og salt oppe, især hvis det er varmt vejr'
+        ]
+  },
+  dayBefore: {
+    kind:'DAGEN FØR', cls:'', title:'Dagen før løb',
+    points:[
+      'Kulhydratrigt og velkendt — det er ikke tidspunktet for at prøve noget nyt',
+      'Moderat fiber (undgå meget rå grønt/bønner sent på dagen, hvis din mave er følsom)',
+      'Gå let på alkohol og meget fed/krydret mad',
+      'Drik normalt, gerne med lidt salt til, i stedet for at "drikke ekstra meget" på én gang'
+    ]
+  },
+  raceDay: {
+    kind:'LØBSDAGEN', cls:'tempo', title:'Morgenmad & under løbet',
+    points:[
+      'Spis 2-4 timer før start — kendte fødevarer med lavt fedt/fiberindhold (havregrød, toast, banan, honning)',
+      'Koffein kun hvis du plejer at drikke det — ikke debut på løbsdagen',
+      'Kan løbet tage over ~75 min, kan lidt kulhydrat undervejs hjælpe — men kun hvis du har øvet det i træning',
+      'Drik efter tørst undervejs, ikke efter en fast plan'
+    ]
+  },
+  afterRace: {
+    kind:'EFTER LØBET', cls:'long', title:'Restitution',
+    points:[
+      'Kulhydrat + protein indenfor 30-60 minutter — fx skyr med frugt, en genopbygningsdrik eller bare et almindeligt måltid, hvis det passer bedre',
+      'Genhydrér med salt, især hvis du har svedt meget',
+      'Ingen grund til at "gøre op" for løbet bagefter — kroppen har brug for brændstof til at komme sig'
+    ]
+  }
+};
+
+function nutritionCardHtml(c){
+  const div = document.createElement('div');
+  div.className = 'plan-card '+c.cls;
+  const pts = typeof c.points==='function' ? c.points(raceDistanceKm()) : c.points;
+  div.innerHTML = `
+    <div class="plan-kind">${c.kind}</div>
+    <div class="plan-title">${c.title}</div>
+    <ul class="nutrition-list">${pts.map(p=>'<li>'+p+'</li>').join('')}</ul>
+  `;
+  return div;
+}
+
+function renderNutrition(){
+  const grid = document.getElementById('nutritionGrid');
+  const sub = document.getElementById('nutritionSub');
+  grid.innerHTML = '';
+  const cardsToShow = [NUTRITION_CARDS.everyday];
+
+  let daysToRace = null;
+  if(GOAL && GOAL.raceDate){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const raceD = new Date(GOAL.raceDate+'T00:00:00');
+    daysToRace = Math.round((raceD-today)/86400000);
+  }
+
+  if(daysToRace===null){
+    cardsToShow.push(NUTRITION_CARDS.specific);
+    sub.textContent = 'GENEREL SPORTSERNÆRING · SÆT ET MÅL FOR RACE-SPECIFIKKE RÅD';
+  } else if(daysToRace > 7){
+    cardsToShow.push(NUTRITION_CARDS.specific);
+    sub.textContent = daysToRace + ' DAGE TIL LØB · HVERDAGSFOKUS';
+  } else if(daysToRace > 1){
+    cardsToShow.push(NUTRITION_CARDS.raceweek, NUTRITION_CARDS.raceDay);
+    sub.textContent = daysToRace + ' DAGE TIL LØB · RACE WEEK';
+  } else if(daysToRace === 1){
+    cardsToShow.push(NUTRITION_CARDS.dayBefore, NUTRITION_CARDS.raceDay);
+    sub.textContent = 'I MORGEN ER DET LØBSDAG';
+  } else if(daysToRace === 0){
+    cardsToShow.push(NUTRITION_CARDS.raceDay, NUTRITION_CARDS.afterRace);
+    sub.textContent = 'LØBSDAGEN — HELD OG LYKKE';
+  } else {
+    cardsToShow.push(NUTRITION_CARDS.afterRace);
+    sub.textContent = 'EFTER LØBET';
+  }
+
+  cardsToShow.forEach(c => grid.appendChild(nutritionCardHtml(c)));
+}
+
+function render(){
+  const hasData = DATA.totalRunsAllTime>0;
+  document.getElementById('onboardBanner').style.display = hasData ? 'none' : 'block';
+  document.getElementById('eyebrowDate').textContent = 'TRÆNINGSOPTIMERING · OPDATERET ' + fmtDateDK(DATA.generatedFrom).toUpperCase();
+  document.getElementById('totalRunsChip').textContent = DATA.totalRunsAllTime + ' løb i alt';
+  document.getElementById('freqChip').textContent = SESSIONS_PER_WEEK + ' gange/uge';
+  document.getElementById('distChip').textContent = GOAL ? raceLabel() : 'Intet mål endnu';
+  document.getElementById('thresholdChip').textContent = hasData ? 'TÆRSKELFART ' + DATA.thresholdPaceStr + ' /KM' : 'TÆRSKELFART —';
+
+  document.getElementById('fitnessVal').innerHTML = hasData ? DATA.fitness.toFixed(1) : '—';
+  document.getElementById('fatigueVal').innerHTML = hasData ? DATA.fatigue.toFixed(1) : '—';
+  const form = DATA.fitness - DATA.fatigue;
+  const formEl = document.getElementById('formVal');
+  formEl.innerHTML = hasData ? (form>=0?'+':'') + form.toFixed(1) : '—';
+  document.getElementById('formSplit').classList.toggle('negative', hasData && form<0);
+
+  renderVerdict(form, hasData);
+  renderInsight();
+  renderGoal();
+  renderNutrition();
+  renderLadder();
+  renderVolumeChart();
+  renderFormChart();
+  renderPlan(form);
+  renderRunsTable();
+}
+
+function renderVerdict(form, hasData){
+  const box = document.getElementById('verdictBox');
+  if(hasData===false){
+    box.innerHTML = '<b>Ingen data endnu</b> — importér dine løbeture, så beregner appen din faktiske form i stedet for at gætte.';
+    box.classList.remove('warn');
+    return;
+  }
+  let text, warn=false;
+  if(form < -12){
+    text = '<b>Du bærer en del træthed lige nu</b> — belastningen har været højere end kroppen har nået at følge med til. Planen herunder er skruet ned, så du kan lande på benene igen.';
+    warn = true;
+  } else if(form < 5){
+    text = '<b>Du er nogenlunde i balance</b> — hverken frisk eller presset. Et fint udgangspunkt til at bygge videre fra i den kommende uge.';
+  } else if(form < 15){
+    text = '<b>Du er relativt frisk.</b> Der er plads til at skrue lidt op i volumen eller intensitet denne uge.';
+  } else {
+    text = '<b>Du er meget frisk</b> — det kan være et tegn på, at volumen har ligget lavt for nylig. God mulighed for at bygge stille og roligt op igen.';
+  }
+  box.innerHTML = text;
+  box.classList.toggle('warn', warn);
+}
+
+function renderInsight(){
+  const box = document.getElementById('insightBox');
+  const w = DATA.weekly;
+  if(w.length < 8){ box.style.display='none'; return; }
+  // find peak trailing-4-week avg vs most recent 4 weeks
+  let peakAvg = 0;
+  for(let i=3;i<w.length;i++){
+    const avg = (w[i-3].distance_km+w[i-2].distance_km+w[i-1].distance_km+w[i].distance_km)/4;
+    if(avg>peakAvg) peakAvg = avg;
+  }
+  const recentAvg = DATA.avgWeeklyKm4w;
+  if(peakAvg>0 && recentAvg < peakAvg*0.7){
+    box.style.display='block';
+    box.innerHTML = 'Dit ugentlige volumen er faldet mærkbart — fra omkring <b class="mono">'+peakAvg.toFixed(0)+' km</b> på det højeste til <b class="mono">'+recentAvg.toFixed(0)+' km</b> nu. Hvis det ikke er bevidst (ferie, skade, travlt), så byg langsomt op igen frem for at hoppe direkte tilbage til det gamle niveau.';
+  } else {
+    box.style.display='none';
+  }
+}
+
+function renderLadder(){
+  const dist = DATA.zoneDistLast8wMin;
+  const total = Object.values(dist).reduce((a,b)=>a+b,0) || 1;
+  document.getElementById('zoneTotalMin').textContent = Math.round(total) + ' MIN I ALT';
+  const track = document.getElementById('ladderTrack');
+  const legend = document.getElementById('ladderLegend');
+  track.innerHTML=''; legend.innerHTML='';
+  ['Z1','Z2','Z3','Z4'].forEach(z=>{
+    const mins = dist[z] || 0;
+    const pct = Math.round(mins/total*100);
+    if(mins>0){
+      const seg = document.createElement('div');
+      seg.className='ladder-seg';
+      seg.style.width = pct+'%';
+      seg.style.background = ZONE_COLORS[z];
+      seg.setAttribute('data-pct', pct+'%');
+      track.appendChild(seg);
+    }
+    const item = document.createElement('div');
+    item.className='legend-item';
+    item.innerHTML = '<span class="legend-dot" style="background:'+ZONE_COLORS[z]+'"></span>'+z+' · '+ZONE_NAMES[z]+' &nbsp;<b>'+Math.round(mins)+' min</b>';
+    legend.appendChild(item);
+  });
+}
+
+function renderVolumeChart(){
+  const ctx = document.getElementById('volumeChart');
+  const labels = DATA.weekly.map(w=>fmtDateDK(w.week_start));
+  const dist = DATA.weekly.map(w=>w.distance_km);
+  const longs = DATA.weekly.map(w=>w.long_run_km);
+  if(volumeChartInstance) volumeChartInstance.destroy();
+  volumeChartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[
+      {label:'Ugentlig km', data:dist, backgroundColor:'#E6A93F99', borderRadius:4, order:2},
+      {label:'Lang tur (km)', data:longs, type:'line', borderColor:'#5FA88A', backgroundColor:'#5FA88A', tension:.3, pointRadius:2, order:1}
+    ]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8FADAC', font:{family:'IBM Plex Mono', size:11}}}},
+      scales:{
+        x:{ticks:{color:'#5F8483', font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:7}, grid:{color:'#1c3f42'}},
+        y:{ticks:{color:'#5F8483', font:{size:10}}, grid:{color:'#1c3f42'}}
+      }
+    }
+  });
+}
+
+function renderFormChart(){
+  const ctx = document.getElementById('formChart');
+  const labels = DATA.fitnessFatigue.map(f=>fmtDateDK(f.week_start));
+  const fit = DATA.fitnessFatigue.map(f=>f.fitness);
+  const fat = DATA.fitnessFatigue.map(f=>f.fatigue);
+  if(formChartInstance) formChartInstance.destroy();
+  formChartInstance = new Chart(ctx, {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Fitness', data:fit, borderColor:'#E6A93F', backgroundColor:'#E6A93F22', tension:.3, pointRadius:0, fill:true},
+      {label:'Træthed', data:fat, borderColor:'#5B8FC0', backgroundColor:'transparent', tension:.3, pointRadius:0, borderDash:[4,3]}
+    ]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8FADAC', font:{family:'IBM Plex Mono', size:11}}}},
+      scales:{
+        x:{ticks:{color:'#5F8483', font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:7}, grid:{color:'#1c3f42'}},
+        y:{ticks:{color:'#5F8483', font:{size:10}}, grid:{color:'#1c3f42'}}
+      }
+    }
+  });
+}
+
+/* ---------- ZONER ANKRET TIL TÆRSKELFART ---------- */
+// Offsets i sekunder/km fra tærskelfart (Z4/Z5-grænsen). Kalibreret ud fra egne
+// viste zonegrænser (Z1 5:51-7:19, Z2 5:10-5:51, tærskel=Z4/Z5-grænse).
+// Præcise grænser fra din egen intervals.icu-opsætning (Indstillinger → Løb → Tempozoner),
+// udtrykt som sekund/km-afstand fra din tærskeltempo (4:32/km).
+const ZONE_BOUNDS = { Z1:[79,167], Z2:[38,78], Z3:[16,37], Z4:[0,15], Z5:[-9,-1], Z6:[-28,-10], Z7:[-45,-29] };
+function zoneBoundPace(offsetSec){ return DATA.thresholdPaceMinKm + offsetSec/60; }
+function paceForZone(z){
+  const [fastOff, slowOff] = ZONE_BOUNDS[z];
+  return (zoneBoundPace(fastOff)+zoneBoundPace(slowOff))/2;
+}
+function zoneRangeStr(z){
+  const [fastOff, slowOff] = ZONE_BOUNDS[z];
+  return mmss(zoneBoundPace(fastOff))+'-'+mmss(zoneBoundPace(slowOff));
+}
+
+function computePlan(){
+  const form = DATA.fitness - DATA.fatigue;
+  const thresh = DATA.thresholdPaceMinKm;
+  const programWeek = (PROGRAM && PROGRAM.weeks[0] && !PROGRAM.weeks[0].isRace) ? PROGRAM.weeks[0] : null;
+
+  let longRun, phase;
+  if(programWeek){
+    longRun = programWeek.longKm;
+    phase = programWeek.phase;
+    if(form < -12) longRun *= 0.85;
+    else if(form > 12) longRun *= 1.05;
+  } else {
+    phase = 'Formbaseret';
+    const factor = form < -12 ? 0.85 : (form > 12 ? 1.12 : 1.07);
+    longRun = DATA.recentLongRunKm>0 ? DATA.recentLongRunKm*factor : Math.max(DATA.avgWeeklyKm4w*0.4, 8);
+  }
+  longRun = Math.min(Math.max(longRun, 8), 19);
+  longRun = Math.round(longRun*2)/2;
+
+  const specific = phase==='Skarphed' || phase==='Nedtrapning';
+  let goalPace = null;
+  if(GOAL && GOAL.targetTimeSec) goalPace = (GOAL.targetTimeSec/60)/raceDistanceKm();
+
+  return {form, phase, thresh, longRun, specific, goalPace};
+}
+
+/* ---------- PAS-BIBLIOTEK (egen, forenklet gengivelse af principperne) ---------- */
+function buildEasySegs(p, withStrides){
+  if(withStrides===undefined) withStrides = true;
+  const warmupMin=10, strideWorkSec=20, strideJogSec=90, reps=5, afjogMin=5;
+  const targetTotal = Math.max(p.longRun*0.38, 5) * (paceForZone('Z2'));
+  const stridesMin = withStrides ? reps*(strideWorkSec+strideJogSec)/60 : 0;
+  const mainMin = Math.max(Math.round(targetTotal - warmupMin - stridesMin - afjogMin), 15);
+  const segs = [
+    {label:'Opvarmning', min:warmupMin, zone:'Z2', ramp:true},
+    {label:'Rolig tur', min:mainMin, zone:'Z2'}
+  ];
+  if(withStrides){
+    for(let i=0;i<reps;i++){
+      segs.push({label:'Stigningsløb', min:strideWorkSec/60, zone:'Z6', ramp:true, rampFrom:'Z3'});
+      segs.push({label:'Jog pause', min:strideJogSec/60, zone:'Z1'});
+    }
+  }
+  segs.push({label:'Afjog', min:afjogMin, zone:'Z1'});
+  return segs;
+}
+
+/* Vælger pas-typer ud fra ønsket antal ugentlige træninger.
+   Lang tur og tærskelpas prioriteres altid; ekstra pas fyldes med rolige ture
+   (den første med stigningsløb, resten uden). */
+function getSessionPlan(n){
+  n = Math.max(1, Math.min(n, 6));
+  if(n===1) return [{type:'long', withStrides:false}];
+  if(n===2) return [{type:'tempo'}, {type:'long'}];
+  const plan = [{type:'easy', withStrides:true}];
+  for(let i=1;i<n-2;i++) plan.push({type:'easy', withStrides:false});
+  plan.push({type:'tempo'}, {type:'long'});
+  return plan;
+}
+
+function buildTempoSegs(p){
+  const warmupMin=15, reps=4, workMin=7, jogMin=2, cooldownMin=10;
+  const workZone = p.specific ? 'Z5' : 'Z4';
+  const segs=[{label:'Opvarmning', min:warmupMin, zone:'Z2', ramp:true}];
+  for(let i=0;i<reps;i++){
+    segs.push({label:'Tærskelinterval', min:workMin, zone:workZone, main:true});
+    segs.push({label:'Jog pause', min:jogMin, zone:'Z1'});
+  }
+  segs.push({label:'Afjog', min:cooldownMin, zone:'Z1'});
+  return segs;
+}
+
+function buildLongSegs(p){
+  const warmupMin=10, afjogMin=5;
+  const fastKm = Math.min(3, +(p.longRun*0.15).toFixed(1));
+  const easyKm = p.longRun-fastKm;
+  const easyPaceMin = paceForZone('Z2');
+  const mainMin = Math.max(Math.round(easyKm*easyPaceMin - warmupMin), 15);
+  const fastZone = p.specific ? 'Z5' : 'Z3';
+  const fastMin = fastKm>0 ? Math.round(fastKm*paceForZone(fastZone)) : 0;
+  const segs=[{label:'Opvarmning', min:warmupMin, zone:'Z2', ramp:true},{label:'Lang tur', min:mainMin, zone:'Z2', main:true}];
+  if(fastMin>0) segs.push({label:'Opskruning', min:fastMin, zone:fastZone, main:true});
+  segs.push({label:'Afjog', min:afjogMin, zone:'Z1', ramp:true});
+  return segs;
+}
+
+function segTotals(segs){
+  let durationMin=0, distanceKm=0, loadSum=0, ifWeighted=0;
+  const zoneMin={};
+  segs.forEach(s=>{
+    const pace = paceForZone(s.zone);
+    durationMin += s.min;
+    distanceKm += s.min/pace;
+    const ifVal = DATA.thresholdPaceMinKm/pace;
+    loadSum += (s.min/60)*100*ifVal*ifVal;
+    ifWeighted += ifVal*s.min;
+    zoneMin[s.zone] = (zoneMin[s.zone]||0) + s.min;
+  });
+  return {
+    durationMin: Math.round(durationMin), distanceKm: +distanceKm.toFixed(1),
+    load: Math.round(loadSum), intensityPct: durationMin>0 ? Math.round(ifWeighted/durationMin*100) : 0,
+    zoneMin
+  };
+}
+
+const RATIONALE = {
+  easy: 'Rolig, konversationsfart der vedligeholder volumen og styrker kroppens evne til at bruge fedt som brændstof. Stigningsløbene til sidst vækker muskler og nervesystem uden at lægge reel træthed oveni.',
+  tempo: p => p.specific
+    ? 'Intervaller lagt tæt på din målfart, så krop og hoved vænner sig til præcis den belastning, du skal holde på løbsdagen.'
+    : 'Hårdt, men kontrolleret arbejde omkring tærskel. Forlænger den tid, du kan holde et højt tempo, og flytter tærsklen i den rigtige retning over tid.',
+  long: p => p.form < -12
+    ? 'En bevidst kortere lang tur i en let uge, så kroppen kan restituere, mens den aerobe base fastholdes.'
+    : 'Bygger den specifikke udholdenhed, ' + raceLabel().toLowerCase() + ' kræver — tid på benene i stabilt tempo, med en afsluttende opskruning der vænner benene til at accelerere, selv når de er trætte.'
+};
+
+function segsToWorkoutText(segs){
+  const lines = [];
+  let i=0;
+  while(i<segs.length){
+    const s = segs[i];
+    if(s.label==='Stigningsløb' || s.label==='Tærskelinterval'){
+      let reps=0, j=i;
+      while(j<segs.length && segs[j].label===s.label){ reps++; j+=2; }
+      const restSeg = segs[i+1];
+      const kmStr = (s.min/paceForZone(s.zone)).toFixed(2)+'km';
+      const restKm = (restSeg.min/paceForZone(restSeg.zone)).toFixed(2)+'km';
+      if(s.label==='Stigningsløb'){
+        lines.push('Strides '+reps+'x');
+        lines.push('- Stigningsløb '+Math.round(s.min*60)+'s ramp Z3-'+s.zone+' pace ('+zoneRangeStr('Z3')+' for '+kmStr+')');
+      } else {
+        lines.push('Hovedsæt '+reps+'x');
+        lines.push('- Tærskelinterval '+Math.round(s.min)+'m '+s.zone+' pace ('+zoneRangeStr(s.zone)+' for '+kmStr+') intensity=interval');
+      }
+      lines.push('- Jog pause '+Math.round(restSeg.min)+'m Z1 pace ('+zoneRangeStr('Z1')+' for '+restKm+')');
+      lines.push('');
+      i = j; continue;
+    }
+    const kmStr = (s.min/paceForZone(s.zone)).toFixed(2)+'km';
+    const durStr = s.min<1 ? Math.round(s.min*60)+'s' : Math.round(s.min)+'m';
+    let line = '- '+s.label+' '+durStr+(s.ramp?' ramp '+s.zone+'-'+s.zone:' @ '+s.zone)+' pace ('+zoneRangeStr(s.zone)+' for '+kmStr+')';
+    if(s.main) line += ' intensity=interval';
+    lines.push(s.label);
+    lines.push(line);
+    lines.push('');
+    i++;
+  }
+  return lines.join('\n').trim();
+}
+function countReps(segs,i){
+  let n=0, j=i, first=segs[i].label;
+  while(j<segs.length && segs[j].label===first){ n++; j+=2; }
+  return n;
+}
+
+function legacyCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  ta.style.top = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+function copyText(btn, text, preEl){
+  const showSuccess = ()=>{
+    const orig = btn.textContent;
+    btn.textContent = 'Kopieret ✓';
+    setTimeout(()=>btn.textContent = orig, 1600);
+  };
+  const showManual = ()=>{
+    btn.textContent = 'Markér teksten ovenfor og kopiér (Ctrl/Cmd+C)';
+    if(preEl){
+      const range = document.createRange();
+      range.selectNodeContents(preEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      preEl.scrollIntoView({block:'nearest'});
+    }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(showSuccess).catch(()=>{
+      if(legacyCopy(text)) showSuccess(); else showManual();
+    });
+  } else {
+    if(legacyCopy(text)) showSuccess(); else showManual();
+  }
+}
+window.copyText = copyText;
+
+function zoneMiniBar(zoneMin){
+  const total = Object.values(zoneMin).reduce((a,b)=>a+b,0) || 1;
+  return Object.keys(ZONE_BOUNDS).filter(z=>zoneMin[z]).map(z=>{
+    const pct = Math.round(zoneMin[z]/total*100);
+    return `<div class="zmini-seg" style="width:${pct}%;background:${ZONE_COLORS[z]||'#3E6360'}" title="${z} ${pct}%"></div>`;
+  }).join('');
+}
+
+/* ---------- BEGYNDERPROGRAM (gå/løb, uafhængigt af tærskeldata) ---------- */
+const BEGINNER_WEEKS = [
+  {run:1, walk:1, reps:8},
+  {run:1, walk:1, reps:10},
+  {run:2, walk:1, reps:7},
+  {run:3, walk:1, reps:6},
+  {run:5, walk:1, reps:4},
+  {run:8, walk:1, reps:3},
+  {run:12, walk:1, reps:2},
+  {run:22, walk:0, reps:1}
+];
+function beginnerCode(w){
+  if(w.walk===0) return 'Sammenhængende løb '+w.run+' min';
+  const parts=[];
+  for(let i=0;i<w.reps;i++){ parts.push(w.run, w.walk); }
+  return parts.join('-');
+}
+function beginnerDesc(w){
+  if(w.walk===0) return 'Ingen gangpauser — du løber hele stykket i ét stræk. Vælg selv tempoet, det skal føles roligt.';
+  return w.reps+' × ('+w.run+' min løb / '+w.walk+' min gang), i et tempo hvor du kan tale imens.';
+}
+function beginnerWorkoutText(w){
+  if(w.walk===0){
+    return `Opvarmning\n- Rolig gang 5m\n\nLøb\n- Sammenhængende løb ${w.run}m\n\nAfjog\n- Rolig gang 5m`;
+  }
+  return `Opvarmning\n- Rolig gang 5m\n\nLøb/gå ${w.reps}x\n- Løb ${w.run}m\n- Gang ${w.walk}m\n\nAfjog\n- Rolig gang 5m`;
+}
+function renderBeginnerPlan(){
+  document.getElementById('planPhase').textContent = 'BEGYNDERPROGRAM · GÅ/LØB-OPBYGNING';
+  const tbl = document.getElementById('beginnerTable');
+  tbl.innerHTML = '<thead><tr><th>Uge</th><th>Mønster</th><th>Beskrivelse</th><th>Varighed</th><th></th></tr></thead>';
+  const tbody = document.createElement('tbody');
+  BEGINNER_WEEKS.forEach((w,i)=>{
+    const totalMin = 10 + w.reps*(w.run+w.walk); // 10 min opvarmning+afjog samlet
+    const wt = beginnerWorkoutText(w);
+    const tr = document.createElement('tr');
+    if(i===0) tr.className = 'current-week';
+    tr.innerHTML = `
+      <td><div class="beginner-week-num mono">${i+1}</div></td>
+      <td><span class="beginner-code">${beginnerCode(w)}</span></td>
+      <td class="beginner-desc">${beginnerDesc(w)}</td>
+      <td class="mono">${totalMin} min</td>
+      <td><button class="copy-btn beginner-copy-btn">Kopiér</button></td>
+    `;
+    tr.querySelector('.beginner-copy-btn').addEventListener('click', function(){ copyText(this, wt); });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+}
+
+function renderPlan(form){
+  document.getElementById('advancedPlanWrap').style.display = isBeginner() ? 'none' : 'block';
+  document.getElementById('beginnerPlanWrap').style.display = isBeginner() ? 'block' : 'none';
+  if(isBeginner()){
+    renderBeginnerPlan();
+    return;
+  }
+  const p = computePlan();
+  document.getElementById('planPhase').textContent = (GOAL && PROGRAM ? p.phase.toUpperCase()+' · ' : '') + SESSIONS_PER_WEEK+' PAS · ' + (DATA.totalRunsAllTime>0 ? 'SIMULERET UD FRA DINE EGNE DATA' : 'EKSEMPEL — IMPORTÉR DATA FOR AT PERSONALISERE');
+
+  const sessionPlan = getSessionPlan(SESSIONS_PER_WEEK);
+  let easyCount = 0;
+  const cards = sessionPlan.map(item=>{
+    if(item.type==='easy'){
+      easyCount++;
+      const segs = buildEasySegs(p, item.withStrides);
+      const tot = segTotals(segs);
+      return {
+        kind: item.withStrides ? 'ROLIG TUR' : 'ROLIG TUR '+easyCount,
+        cls:'', title: item.withStrides ? 'Aerob base + stigningsløb' : 'Aerob base',
+        segs, tot, rationale: RATIONALE.easy
+      };
+    }
+    if(item.type==='tempo'){
+      const segs = buildTempoSegs(p);
+      const tot = segTotals(segs);
+      return {
+        kind:'TEMPO / KVALITET', cls:'tempo', title: p.specific?'Løbsfart-specifikt':'Tærskelintervaller',
+        segs, tot, rationale: typeof RATIONALE.tempo==='function'?RATIONALE.tempo(p):RATIONALE.tempo
+      };
+    }
+    const segs = buildLongSegs(p);
+    const tot = segTotals(segs);
+    return {
+      kind:'LANG TUR', cls:'long', title:raceLabel()+'-udholdenhed',
+      segs, tot, rationale: typeof RATIONALE.long==='function'?RATIONALE.long(p):RATIONALE.long
+    };
+  });
+
+  const curWeek = (PROGRAM && PROGRAM.weeks[0]) || null;
+  const hasRealData = DATA.totalRunsAllTime>0;
+  const fitness = curWeek ? curWeek.projFitness : DATA.fitness;
+  const fatigue = curWeek ? curWeek.projFatigue : DATA.fatigue;
+  const formVal = curWeek ? curWeek.projForm : form;
+  const ramp = curWeek ? curWeek.ramp : null;
+  const zoneAll = {};
+  cards.forEach(c=>Object.keys(c.tot.zoneMin).forEach(z=> zoneAll[z]=(zoneAll[z]||0)+c.tot.zoneMin[z]));
+  const pol = computePolarizationFromZones(zoneAll);
+
+  document.getElementById('coachStats').innerHTML = `
+    <div class="coach-stat"><div class="coach-stat-label">Fitness</div><div class="coach-stat-value mono">${hasRealData ? fitness.toFixed(1) : '—'}</div></div>
+    <div class="coach-stat"><div class="coach-stat-label">Trætheed</div><div class="coach-stat-value mono">${hasRealData ? fatigue.toFixed(1) : '—'}</div></div>
+    <div class="coach-stat"><div class="coach-stat-label">Form</div><div class="coach-stat-value mono">${hasRealData ? (formVal>=0?'+':'')+formVal.toFixed(1) : '—'}</div></div>
+    <div class="coach-stat"><div class="coach-stat-label">Rampe</div><div class="coach-stat-value mono">${hasRealData && ramp!=null ? (ramp>=0?'+':'')+ramp.toFixed(1) : '—'}</div></div>
+    <div class="coach-stat"><div class="coach-stat-label">Zoner Polariseret</div><div class="coach-stat-value mono">${pol!=null ? pol.toFixed(2) : '—'}</div></div>
+  `;
+
+  const grid = document.getElementById('planGrid');
+  grid.innerHTML = '';
+
+  cards.forEach((c, idx)=>{
+    const wt = segsToWorkoutText(c.segs);
+    const durH = Math.floor(c.tot.durationMin/60), durM = c.tot.durationMin%60;
+    const durStr = durH>0 ? durH+'t'+String(durM).padStart(2,'0')+'m' : c.tot.durationMin+'m';
+    const div = document.createElement('div');
+    div.className = 'plan-card '+c.cls;
+    div.innerHTML = `
+      <div class="plan-kind">${c.kind}</div>
+      <div class="plan-title">${c.title}</div>
+      <div class="plan-statrow">
+        <div><div class="plan-statlabel">Varighed</div><div class="plan-statval mono">${durStr}</div></div>
+        <div><div class="plan-statlabel">Afstand</div><div class="plan-statval mono">${c.tot.distanceKm.toFixed(1)}km</div></div>
+        <div><div class="plan-statlabel">Belastning</div><div class="plan-statval mono">${c.tot.load}</div></div>
+        <div><div class="plan-statlabel">Intensitet</div><div class="plan-statval mono">${c.tot.intensityPct}%</div></div>
+      </div>
+      <div class="zmini-bar">${zoneMiniBar(c.tot.zoneMin)}</div>
+      <div class="plan-desc">${c.rationale}</div>
+      <pre class="wo-code"></pre>
+      <button class="copy-btn">Kopiér til intervals.icu</button>
+      <div class="send-row">
+        <input type="date" class="send-date" id="sendDate${idx}">
+        <button class="copy-btn send-btn" id="sendBtn${idx}">🧪 Send til intervals.icu</button>
+      </div>
+      <div class="status-msg" id="sendStatus${idx}"></div>
+    `;
+    const preEl = div.querySelector('.wo-code');
+    preEl.textContent = wt;
+    div.querySelector('.copy-btn').addEventListener('click', function(){ copyText(this, wt, preEl); });
+    div.querySelector('.send-btn').addEventListener('click', function(){
+      sendWorkoutToIntervals(c.title, wt, document.getElementById('sendDate'+idx).value, document.getElementById('sendStatus'+idx), this);
+    });
+    grid.appendChild(div);
+  });
+}
+
+async function sendWorkoutToIntervals(name, description, dateVal, statusEl, btn){
+  statusEl.style.display='block'; statusEl.className='status-msg';
+  if(!dateVal){ statusEl.className='status-msg err'; statusEl.textContent='Vælg en dato først.'; return; }
+  let athleteId, apiKey;
+  try{
+    athleteId = await storageGet('api_athlete_id');
+    apiKey = await storageGet('api_key');
+  }catch(e){}
+  if(!athleteId || !apiKey){
+    statusEl.className='status-msg err';
+    statusEl.textContent = 'Udfyld Athlete ID + API-nøgle under "Opdater med nye data" først (samme nøgle bruges her).';
+    return;
+  }
+  statusEl.textContent = 'Sender til intervals.icu …';
+  const origText = btn.textContent;
+  try{
+    const url = `https://intervals.icu/api/v1/athlete/${encodeURIComponent(athleteId)}/events?upsertOnUid=true`;
+    const body = {
+      name: name,
+      type: 'Run',
+      category: 'WORKOUT',
+      start_date_local: dateVal+'T07:00:00',
+      description: description,
+      external_id: 'chasethebanana-'+name.replace(/\s+/g,'-').toLowerCase()+'-'+dateVal
+    };
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{ 'Authorization':'Basic '+btoa('API_KEY:'+apiKey), 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(!res.ok){
+      const txt = await res.text().catch(()=> '');
+      statusEl.className='status-msg err';
+      statusEl.textContent = 'Afvist (fejl '+res.status+'): '+txt.slice(0,150);
+      return;
+    }
+    statusEl.className='status-msg';
+    statusEl.textContent = '🎉 Sendt! Tjek kalenderen på intervals.icu — og at det synkroniserer til uret.';
+    btn.textContent = 'Sendt ✓';
+    setTimeout(()=>btn.textContent = origText, 2000);
+  }catch(err){
+    statusEl.className='status-msg err';
+    statusEl.textContent = 'Blokeret af browseren (sandsynligvis CORS): '+err.message;
+  }
+}
+
+function renderRunsTable(){
+  const tbody = document.getElementById('runsTableBody');
+  tbody.innerHTML = '';
+  const runs = DATA.recentRuns.slice().reverse();
+  runs.forEach(r=>{
+    const tr = document.createElement('tr');
+    const zoneColor = r.zone ? ZONE_COLORS[r.zone] : '#5F8483';
+    const zoneBg = r.zone ? ZONE_COLORS[r.zone]+'33' : 'transparent';
+    tr.innerHTML = `
+      <td>${fmtDateDK(r.date)}</td>
+      <td class="name-cell" title="${r.name}">${r.name}</td>
+      <td>${r.zone ? `<span class="zone-badge" style="color:${zoneColor};background:${zoneBg}">${r.zone}</span>` : '—'}</td>
+      <td>${r.distance_km.toFixed(1)}</td>
+      <td>${r.pace_str || '—'}</td>
+      <td>${r.avgHr ? Math.round(r.avgHr) : '—'}</td>
+      <td>${r.load!=null ? Math.round(r.load) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------- CSV IMPORT ---------- */
+function weekStartMonday(d){
+  const dt = new Date(d);
+  const day = (dt.getDay()+6)%7;
+  dt.setDate(dt.getDate()-day);
+  dt.setHours(0,0,0,0);
+  return isoLocal(dt);
+}
+
+function extractZone(name){
+  if(!name) return null;
+  const m = /^Z(\d)/.exec(name.trim());
+  return m ? 'Z'+m[1] : null;
+}
+
+/* Simulerer Fitness/Trætheed dag for dag ud fra en sorteret liste af løb med
+   {_date, load}. Bruges som fallback, når kilden ikke selv leverer
+   icu_fitness/icu_fatigue (fx intervals.icu's API-endpoint for aktiviteter,
+   i modsætning til deres CSV-eksport). */
+function simulateCTLATLFromRuns(sortedRuns){
+  if(!sortedRuns.length) return {fitness:0, fatigue:0, fitnessFatigue:[]};
+  const dayLoad = {};
+  sortedRuns.forEach(r=>{ const k=isoLocal(r._date); dayLoad[k]=(dayLoad[k]||0)+r._simLoad; });
+  const first = new Date(sortedRuns[0]._date); first.setHours(0,0,0,0);
+  const last = new Date(sortedRuns[sortedRuns.length-1]._date); last.setHours(0,0,0,0);
+  let ctl=0, atl=0;
+  const ffByWeek = {};
+  for(let d=new Date(first); d<=last; d.setDate(d.getDate()+1)){
+    const k = isoLocal(d);
+    const load = dayLoad[k]||0;
+    ctl = ctl + (load-ctl)/42;
+    atl = atl + (load-atl)/7;
+    const wk = weekStartMonday(d);
+    ffByWeek[wk] = {week_start:wk, fitness:+ctl.toFixed(1), fatigue:+atl.toFixed(1)};
+  }
+  return {
+    fitness: +ctl.toFixed(1), fatigue: +atl.toFixed(1),
+    fitnessFatigue: Object.values(ffByWeek).sort((a,b)=>a.week_start.localeCompare(b.week_start)).slice(-30)
+  };
+}
+
+function processCSVRows(rows){
+  const runs = rows.filter(r => (r.type==='Run' || r.type==='VirtualRun') && r.start_date_local && r.distance);
+  runs.forEach(r=>{
+    r._date = new Date(r.start_date_local);
+    r.distance_km = parseFloat(r.distance)/1000;
+    r.moving_time = parseFloat(r.moving_time);
+    r.duration_min = r.moving_time/60;
+    r.pace_min_per_km = r.duration_min/r.distance_km;
+    r._zone = extractZone(r.name);
+    r._week = weekStartMonday(r._date);
+  });
+  runs.sort((a,b)=>a._date-b._date);
+  if(runs.length===0) return null;
+
+  // threshold pace: last non-empty
+  let threshMs = null;
+  for(let i=runs.length-1;i>=0;i--){
+    const v = parseFloat(runs[i].threshold_pace);
+    if(!isNaN(v) && v>0){ threshMs = v; break; }
+  }
+  const thresholdPaceMinKm = threshMs ? (1000/threshMs)/60 : 4.5;
+
+  let fitness=null, fatigue=null;
+  for(let i=runs.length-1;i>=0;i--){
+    const f=parseFloat(runs[i].icu_fitness), a=parseFloat(runs[i].icu_fatigue);
+    if(fitness===null && !isNaN(f)) fitness=f;
+    if(fatigue===null && !isNaN(a)) fatigue=a;
+    if(fitness!==null && fatigue!==null) break;
+  }
+
+  // weekly aggregation
+  const weekMap = {};
+  runs.forEach(r=>{
+    if(!weekMap[r._week]) weekMap[r._week] = {week_start:r._week, distance_km:0, n_runs:0, long_run_km:0, hrSum:0, hrN:0, load:0};
+    const w = weekMap[r._week];
+    w.distance_km += r.distance_km;
+    w.n_runs += 1;
+    w.long_run_km = Math.max(w.long_run_km, r.distance_km);
+    const hr = parseFloat(r.average_heartrate);
+    if(!isNaN(hr)){ w.hrSum+=hr; w.hrN+=1; }
+    const load = parseFloat(r.icu_training_load);
+    if(!isNaN(load)) w.load += load;
+  });
+  let weekly = Object.values(weekMap).map(w=>({
+    week_start:w.week_start, distance_km:+w.distance_km.toFixed(1), n_runs:w.n_runs,
+    long_run_km:+w.long_run_km.toFixed(1), avg_hr: w.hrN? +(w.hrSum/w.hrN).toFixed(1): null, load:Math.round(w.load)
+  })).sort((a,b)=>a.week_start.localeCompare(b.week_start));
+  weekly = weekly.slice(-20);
+
+  // fitness/fatigue weekly last value
+  const ffMap = {};
+  runs.forEach(r=>{
+    const f=parseFloat(r.icu_fitness), a=parseFloat(r.icu_fatigue);
+    if(!isNaN(f) && !isNaN(a)) ffMap[r._week] = {week_start:r._week, fitness:+f.toFixed(1), fatigue:+a.toFixed(1)};
+  });
+  let fitnessFatigue = Object.values(ffMap).sort((a,b)=>a.week_start.localeCompare(b.week_start)).slice(-30);
+
+  // Fallback: kilden leverede ikke icu_fitness/icu_fatigue (fx API'et) — simulér selv
+  if(fitness===null || fatigue===null || fitnessFatigue.length===0){
+    runs.forEach(r=>{
+      const load = parseFloat(r.icu_training_load);
+      if(!isNaN(load) && load>0){ r._simLoad = load; return; }
+      const ifVal = (thresholdPaceMinKm>0 && r.pace_min_per_km>0) ? thresholdPaceMinKm/r.pace_min_per_km : 0.75;
+      r._simLoad = (r.duration_min/60)*100*ifVal*ifVal;
+    });
+    const sim = simulateCTLATLFromRuns(runs);
+    if(fitness===null) fitness = sim.fitness;
+    if(fatigue===null) fatigue = sim.fatigue;
+    if(fitnessFatigue.length===0) fitnessFatigue = sim.fitnessFatigue;
+  }
+
+  // last 4 weeks
+  const lastDate = runs[runs.length-1]._date;
+  const cutoff4 = new Date(lastDate); cutoff4.setDate(cutoff4.getDate()-28);
+  const last4 = runs.filter(r=>r._date>=cutoff4);
+  const weeks4 = {};
+  last4.forEach(r=>{ weeks4[r._week] = (weeks4[r._week]||0) + r.distance_km; });
+  const weeks4Vals = Object.values(weeks4);
+  const avgWeeklyKm4w = weeks4Vals.length ? weeks4Vals.reduce((a,b)=>a+b,0)/weeks4Vals.length : 0;
+  const recentLongRunKm = last4.length ? Math.max(...last4.map(r=>r.distance_km)) : 0;
+
+  // zone dist last 8 weeks
+  const cutoff8 = new Date(lastDate); cutoff8.setDate(cutoff8.getDate()-56);
+  const last8 = runs.filter(r=>r._date>=cutoff8);
+  const zoneDist = {};
+  last8.forEach(r=>{ if(r._zone) zoneDist[r._zone] = (zoneDist[r._zone]||0) + r.duration_min; });
+
+  // recent 15 runs
+  function mmssLocal(p){ if(isNaN(p)) return null; const m=Math.floor(p); let s=Math.round((p-m)*60); let mm=m; if(s===60){mm++;s=0;} return mm+':'+String(s).padStart(2,'0'); }
+  const recentRuns = runs.slice(-15).map(r=>({
+    date: isoLocal(r._date), name: r.name || 'Løb', zone: r._zone,
+    distance_km:+r.distance_km.toFixed(2), duration_min:+r.duration_min.toFixed(1),
+    pace_str: mmssLocal(r.pace_min_per_km), avgHr: parseFloat(r.average_heartrate)||null,
+    load: parseFloat(r.icu_training_load)||null, rpe: parseFloat(r.icu_rpe)||null
+  }));
+
+  return {
+    athleteId: 'imported', generatedFrom: isoLocal(lastDate),
+    thresholdPaceMinKm:+thresholdPaceMinKm.toFixed(3), thresholdPaceStr: mmssLocal(thresholdPaceMinKm),
+    fitness: fitness!==null? +fitness.toFixed(1):0, fatigue: fatigue!==null? +fatigue.toFixed(1):0,
+    form: (fitness!==null&&fatigue!==null)? +(fitness-fatigue).toFixed(1):0,
+    avgWeeklyKm4w:+avgWeeklyKm4w.toFixed(1), recentLongRunKm:+recentLongRunKm.toFixed(1),
+    totalRunsAllTime: runs.length, zoneDistLast8wMin: zoneDist, weekly, fitnessFatigue, recentRuns
+  };
+}
+
+/* ---------- GARMIN CONNECT'S EGET CSV-FORMAT (danske kolonnenavne) ---------- */
+function detectCSVFormat(rows){
+  if(!rows || !rows.length) return null;
+  const cols = Object.keys(rows[0]);
+  if(cols.includes('start_date_local') && cols.includes('type')) return 'intervals';
+  if(cols.includes('Aktivitetstype') && cols.includes('Dato')) return 'garmin';
+  return null;
+}
+
+function parseGarminDuration(str){ // "00:51:30" -> minutter
+  if(!str) return NaN;
+  const parts = str.split(':').map(Number);
+  if(parts.some(isNaN)) return NaN;
+  if(parts.length===3) return parts[0]*60 + parts[1] + parts[2]/60;
+  if(parts.length===2) return parts[0] + parts[1]/60;
+  return NaN;
+}
+function parseGarminPace(str){ // "5:06" min:sek/km -> min/km
+  if(!str) return NaN;
+  const parts = str.split(':').map(Number);
+  if(parts.length!==2 || parts.some(isNaN)) return NaN;
+  return parts[0] + parts[1]/60;
+}
+function mmssLocal2(p){
+  if(p==null || isNaN(p)) return null;
+  const m=Math.floor(p); let s=Math.round((p-m)*60); let mm=m; if(s===60){mm++;s=0;}
+  return mm+':'+String(s).padStart(2,'0');
+}
+
+function processGarminRows(rows){
+  const runTypes = ['Løb','Trail-løb','Virtuelt løb','Løbebånd'];
+  const runs = rows.filter(r => runTypes.includes((r['Aktivitetstype']||'').trim()) && r['Dato'] && r['Distance']);
+  runs.forEach(r=>{
+    r._date = new Date((r['Dato']||'').replace(' ','T'));
+    r.distance_km = parseFloat((r['Distance']||'').replace(',',''));
+    r.duration_min = parseGarminDuration(r['Tid']);
+    const pace = r.distance_km>0 && !isNaN(r.duration_min) ? r.duration_min/r.distance_km : parseGarminPace(r['Gennemsnitstempo']);
+    r.pace_min_per_km = pace;
+    r.average_heartrate = parseFloat(r['Gennemsnitlig puls']);
+    r.name = r['Titel'] || 'Løb';
+    const m = /Z(\d)/.exec(r.name);
+    r._zone = m ? 'Z'+m[1] : null;
+    r._week = weekStartMonday(r._date);
+  });
+  const valid = runs.filter(r => r._date instanceof Date && !isNaN(r._date) && r.distance_km>0 && !isNaN(r.duration_min));
+  valid.sort((a,b)=>a._date-b._date);
+  if(valid.length===0) return null;
+
+  // Ingen tærskeldata i Garmins eget format — estimér ud fra hurtigste sammenhængende indsats (≥18 min)
+  const candidates = valid.filter(r=>r.duration_min>=18 && !isNaN(r.pace_min_per_km) && r.pace_min_per_km>0);
+  const pool = candidates.length ? candidates : valid.filter(r=>!isNaN(r.pace_min_per_km) && r.pace_min_per_km>0);
+  const thresholdPaceMinKm = pool.length ? Math.min(...pool.map(r=>r.pace_min_per_km)) : 5.0;
+
+  // Belastning estimeret ud fra samme intensitets-model som resten af appen (ingen TSS i Garmins fil)
+  valid.forEach(r=>{
+    const ifVal = (!isNaN(r.pace_min_per_km) && r.pace_min_per_km>0) ? thresholdPaceMinKm/r.pace_min_per_km : 0.75;
+    r._load = (r.duration_min/60)*100*ifVal*ifVal;
+  });
+
+  // Simulér Fitness/Trætheed dag for dag hen over hele perioden (samme 42/7-dages model som ellers)
+  const dayLoad = {};
+  valid.forEach(r=>{ const k=isoLocal(r._date); dayLoad[k]=(dayLoad[k]||0)+r._load; });
+  const firstDate = new Date(valid[0]._date); firstDate.setHours(0,0,0,0);
+  const lastDate = new Date(valid[valid.length-1]._date); lastDate.setHours(0,0,0,0);
+  let ctl=0, atl=0;
+  const ffByWeek = {};
+  for(let d=new Date(firstDate); d<=lastDate; d.setDate(d.getDate()+1)){
+    const k = isoLocal(d);
+    const load = dayLoad[k]||0;
+    ctl = ctl + (load-ctl)/42;
+    atl = atl + (load-atl)/7;
+    ffByWeek[weekStartMonday(d)] = {week_start:weekStartMonday(d), fitness:+ctl.toFixed(1), fatigue:+atl.toFixed(1)};
+  }
+  const fitnessFatigue = Object.values(ffByWeek).sort((a,b)=>a.week_start.localeCompare(b.week_start)).slice(-30);
+  const fitness = +ctl.toFixed(1), fatigue = +atl.toFixed(1);
+
+  const weekMap = {};
+  valid.forEach(r=>{
+    if(!weekMap[r._week]) weekMap[r._week] = {week_start:r._week, distance_km:0, n_runs:0, long_run_km:0, hrSum:0, hrN:0, load:0};
+    const w = weekMap[r._week];
+    w.distance_km += r.distance_km;
+    w.n_runs += 1;
+    w.long_run_km = Math.max(w.long_run_km, r.distance_km);
+    if(!isNaN(r.average_heartrate)){ w.hrSum+=r.average_heartrate; w.hrN+=1; }
+    w.load += r._load;
+  });
+  let weekly = Object.values(weekMap).map(w=>({
+    week_start:w.week_start, distance_km:+w.distance_km.toFixed(1), n_runs:w.n_runs,
+    long_run_km:+w.long_run_km.toFixed(1), avg_hr: w.hrN? +(w.hrSum/w.hrN).toFixed(1): null, load:Math.round(w.load)
+  })).sort((a,b)=>a.week_start.localeCompare(b.week_start));
+  weekly = weekly.slice(-20);
+
+  const cutoff4 = new Date(lastDate); cutoff4.setDate(cutoff4.getDate()-28);
+  const last4 = valid.filter(r=>r._date>=cutoff4);
+  const weeks4={};
+  last4.forEach(r=>{ weeks4[r._week]=(weeks4[r._week]||0)+r.distance_km; });
+  const weeks4Vals = Object.values(weeks4);
+  const avgWeeklyKm4w = weeks4Vals.length? weeks4Vals.reduce((a,b)=>a+b,0)/weeks4Vals.length : 0;
+  const recentLongRunKm = last4.length? Math.max(...last4.map(r=>r.distance_km)) : 0;
+
+  const cutoff8 = new Date(lastDate); cutoff8.setDate(cutoff8.getDate()-56);
+  const last8 = valid.filter(r=>r._date>=cutoff8);
+  const zoneDist = {};
+  last8.forEach(r=>{ if(r._zone) zoneDist[r._zone]=(zoneDist[r._zone]||0)+r.duration_min; });
+
+  const recentRuns = valid.slice(-15).map(r=>({
+    date: isoLocal(r._date), name:r.name, zone:r._zone,
+    distance_km:+r.distance_km.toFixed(2), duration_min:+r.duration_min.toFixed(1),
+    pace_str: mmssLocal2(r.pace_min_per_km), avgHr: isNaN(r.average_heartrate)?null:r.average_heartrate,
+    load: Math.round(r._load), rpe:null
+  }));
+
+  return {
+    athleteId:'imported-garmin', generatedFrom: isoLocal(lastDate),
+    thresholdPaceMinKm:+thresholdPaceMinKm.toFixed(3), thresholdPaceStr: mmssLocal2(thresholdPaceMinKm),
+    fitness, fatigue, form:+(fitness-fatigue).toFixed(1),
+    avgWeeklyKm4w:+avgWeeklyKm4w.toFixed(1), recentLongRunKm:+recentLongRunKm.toFixed(1),
+    totalRunsAllTime: valid.length, zoneDistLast8wMin: zoneDist, weekly, fitnessFatigue, recentRuns,
+    estimatedFromGarmin: true
+  };
+}
+
+function setupImport(){
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const statusEl = document.getElementById('importStatus');
+
+  dropzone.addEventListener('click', ()=>fileInput.click());
+  dropzone.addEventListener('dragover', e=>{e.preventDefault(); dropzone.classList.add('drag');});
+  dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e=>{
+    e.preventDefault(); dropzone.classList.remove('drag');
+    if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e=>{
+    if(e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file){
+    statusEl.style.display='block'; statusEl.className='status-msg'; statusEl.textContent='Læser '+file.name+' …';
+    Papa.parse(file, {
+      header:true, skipEmptyLines:true,
+      complete: async (results)=>{
+        try{
+          const format = detectCSVFormat(results.data);
+          let processed = null;
+          if(format==='intervals') processed = processCSVRows(results.data);
+          else if(format==='garmin') processed = processGarminRows(results.data);
+
+          if(!processed){
+            statusEl.className='status-msg err';
+            statusEl.textContent = format
+              ? 'Fandt ingen løbeaktiviteter i filen.'
+              : 'Genkendte ikke filformatet — upload en CSV-eksport fra intervals.icu eller Garmin Connect.';
+            return;
+          }
+          DATA = processed;
+          await saveState();
+          render();
+          statusEl.className='status-msg';
+          statusEl.textContent = 'Importeret! '+processed.totalRunsAllTime+' løb fundet, data opdateret.'
+            + (processed.estimatedFromGarmin ? ' Bemærk: tærskelfart, zoner og Fitness/Trætheed er skøn ud fra dine Garmin-data — for præcise tal, brug en eksport fra intervals.icu i stedet.' : '');
+        }catch(err){
+          statusEl.className='status-msg err';
+          statusEl.textContent = 'Kunne ikke læse filen: '+err.message;
+        }
+      },
+      error: (err)=>{
+        statusEl.className='status-msg err';
+        statusEl.textContent = 'Fejl ved indlæsning: '+err.message;
+      }
+    });
+  }
+}
+
+/* ---------- EKSPERIMENT: direkte API-kald til intervals.icu (ingen CSV) ----------
+   Utestet fra min side (mit miljø har ingen netadgang) — den rigtige test sker i
+   brugerens egen browser. Kan fejle pga. CORS, hvis intervals.icu ikke tillader
+   kald fra andre domæner end deres eget. */
+function setupApiExperiment(){
+  const btn = document.getElementById('apiFetchBtn');
+  const statusEl = document.getElementById('apiFetchStatus');
+  btn.addEventListener('click', async ()=>{
+    const athleteId = document.getElementById('apiAthleteId').value.trim();
+    const apiKey = document.getElementById('apiKey').value.trim();
+    statusEl.style.display='block'; statusEl.className='status-msg';
+
+    if(!athleteId || !apiKey){
+      statusEl.className='status-msg err';
+      statusEl.textContent = 'Udfyld både Athlete ID og API-nøgle.';
+      return;
+    }
+
+    statusEl.textContent = 'Forsøger at hente fra intervals.icu …';
+    const monthsBack = parseInt(document.getElementById('apiMonthsBack').value, 10) || 24;
+    const oldest = new Date(); oldest.setMonth(oldest.getMonth()-monthsBack);
+    const fields = 'type,start_date_local,name,distance,moving_time,average_heartrate,icu_training_load,icu_fitness,icu_fatigue,icu_rpe,threshold_pace';
+    const url = `https://intervals.icu/api/v1/athlete/${encodeURIComponent(athleteId)}/activities?oldest=${isoLocal(oldest)}&fields=${fields}`;
+
+    try{
+      const res = await fetch(url, {
+        headers: { 'Authorization': 'Basic ' + btoa('API_KEY:'+apiKey) }
+      });
+      if(!res.ok){
+        statusEl.className='status-msg err';
+        if(res.status===401 || res.status===403){
+          statusEl.textContent = 'Afvist (fejl '+res.status+') — tjek at Athlete ID og API-nøgle er korrekte.';
+        } else {
+          statusEl.textContent = 'intervals.icu svarede med fejl '+res.status+'.';
+        }
+        return;
+      }
+      const json = await res.json();
+      if(!Array.isArray(json) || json.length===0){
+        statusEl.className='status-msg err';
+        statusEl.textContent = 'Kaldet virkede, men fandt ingen aktiviteter i perioden.';
+        return;
+      }
+      const processed = processCSVRows(json);
+      if(!processed){
+        statusEl.className='status-msg err';
+        statusEl.textContent = 'Fandt ingen løbeaktiviteter i svaret fra intervals.icu.';
+        return;
+      }
+      DATA = processed;
+      await saveState();
+      try{ await storageSet('api_athlete_id', athleteId); await storageSet('api_key', apiKey); }catch(e){}
+      render();
+      statusEl.className='status-msg';
+      statusEl.textContent = '🎉 Det virkede! '+processed.totalRunsAllTime+' løb hentet direkte fra intervals.icu (tilbage til '+fmtDateDK(isoLocal(oldest))+'), uden CSV.';
+    }catch(err){
+      statusEl.className='status-msg err';
+      statusEl.textContent = 'Blokeret af browseren (sandsynligvis CORS) — intervals.icu tillader formentlig ikke kald direkte fra andre hjemmesider. Brug CSV-import i stedet: '+err.message;
+    }
+  });
+
+  // genindlæs evt. tidligere gemte credentials
+  (async ()=>{
+    try{
+      const savedId = await storageGet('api_athlete_id');
+      const savedKey = await storageGet('api_key');
+      if(savedId) document.getElementById('apiAthleteId').value = savedId;
+      if(savedKey) document.getElementById('apiKey').value = savedKey;
+    }catch(e){}
+  })();
+}
+
+function setupQuickAdd(){
+  const btn = document.getElementById('qaSubmit');
+  const statusEl = document.getElementById('qaStatus');
+  btn.addEventListener('click', async ()=>{
+    const date = document.getElementById('qaDate').value;
+    const type = document.getElementById('qaType').value;
+    const dist = parseFloat(document.getElementById('qaDist').value);
+    const dur = parseFloat(document.getElementById('qaDur').value);
+    if(!date || !dist || !dur){
+      statusEl.style.display='block'; statusEl.className='status-msg err';
+      statusEl.textContent = 'Udfyld dato, distance og varighed.';
+      return;
+    }
+    const pace = dur/dist;
+    function mmssLocal(p){ const m=Math.floor(p); let s=Math.round((p-m)*60); let mm=m; if(s===60){mm++;s=0;} return mm+':'+String(s).padStart(2,'0'); }
+    const zoneMap = {Rolig:'Z2', Tempo:'Z4', Lang:'Z2'};
+
+    // Belastning for netop dette løb, samme intensitetsmodel som resten af appen
+    const thresh = DATA.thresholdPaceMinKm || 5.0;
+    const ifVal = thresh>0 && pace>0 ? thresh/pace : 0.8;
+    const runLoad = (dur/60)*100*ifVal*ifVal;
+
+    const newRun = {
+      date, name: type+' tur (tilføjet manuelt)', zone: zoneMap[type],
+      distance_km: dist, duration_min: dur, pace_str: mmssLocal(pace), avgHr:null, load:Math.round(runLoad), rpe:null
+    };
+    DATA.recentRuns.push(newRun);
+    DATA.recentRuns = DATA.recentRuns.slice(-15);
+    DATA.totalRunsAllTime += 1;
+
+    const wk = weekStartMonday(new Date(date));
+    let w = DATA.weekly.find(x=>x.week_start===wk);
+    if(!w){
+      w = {week_start:wk, distance_km:0, n_runs:0, long_run_km:0, avg_hr:null, load:0};
+      DATA.weekly.push(w);
+      DATA.weekly.sort((a,b)=>a.week_start.localeCompare(b.week_start));
+      DATA.weekly = DATA.weekly.slice(-20);
+    }
+    w.distance_km = +(w.distance_km+dist).toFixed(1);
+    w.n_runs += 1;
+    w.long_run_km = Math.max(w.long_run_km, dist);
+    w.load = (w.load||0) + Math.round(runLoad);
+
+    // recompute avgWeeklyKm4w & recentLongRunKm from last 4 weekly entries
+    const last4 = DATA.weekly.slice(-4);
+    DATA.avgWeeklyKm4w = +(last4.reduce((a,b)=>a+b.distance_km,0)/last4.length).toFixed(1);
+    DATA.recentLongRunKm = Math.max(DATA.recentLongRunKm, dist);
+
+    // Opdatér Fitness/Trætheed med samme 42/7-dages model som resten af appen,
+    // så manuel logning holder tallene levende uden en ny CSV-import
+    DATA.fitness = +(DATA.fitness + (runLoad-DATA.fitness)/42).toFixed(1);
+    DATA.fatigue = +(DATA.fatigue + (runLoad-DATA.fatigue)/7).toFixed(1);
+    let ff = DATA.fitnessFatigue.find(x=>x.week_start===wk);
+    if(!ff){ ff = {week_start:wk, fitness:DATA.fitness, fatigue:DATA.fatigue}; DATA.fitnessFatigue.push(ff); DATA.fitnessFatigue.sort((a,b)=>a.week_start.localeCompare(b.week_start)); DATA.fitnessFatigue = DATA.fitnessFatigue.slice(-30); }
+    else { ff.fitness = DATA.fitness; ff.fatigue = DATA.fatigue; }
+    if(new Date(date) > new Date(DATA.generatedFrom+'T00:00:00')) DATA.generatedFrom = date;
+
+    await saveState();
+    render();
+    statusEl.style.display='block'; statusEl.className='status-msg';
+    statusEl.textContent = 'Løb tilføjet — Fitness/Trætheed er opdateret!';
+    document.getElementById('qaDist').value=''; document.getElementById('qaDur').value='';
+  });
+}
+
+function setupGuideModal(){
+  const modal = document.getElementById('guideModal');
+  const open = ()=>{ modal.style.display='flex'; document.body.style.overflow='hidden'; };
+  const close = ()=>{ modal.style.display='none'; document.body.style.overflow=''; };
+  document.getElementById('guideBtn').addEventListener('click', open);
+  document.getElementById('guideClose').addEventListener('click', close);
+  modal.addEventListener('click', (e)=>{ if(e.target===modal) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+}
+setupGuideModal();
+
+setupImport();
+setupApiExperiment();
+setupQuickAdd();
+setupGoalForm();
+document.getElementById('onboardScrollBtn').addEventListener('click', ()=>{
+  document.getElementById('importSection').scrollIntoView({behavior:'smooth', block:'start'});
+});
+loadState();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
