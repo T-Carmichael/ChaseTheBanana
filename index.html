@@ -2052,6 +2052,26 @@ function setupImport(){
    Utestet fra min side (mit miljø har ingen netadgang) — den rigtige test sker i
    brugerens egen browser. Kan fejle pga. CORS, hvis intervals.icu ikke tillader
    kald fra andre domæner end deres eget. */
+/* Delt hente-logik: bruges både af det manuelle "hent direkte"-tryk
+   og af den stille auto-sync ved appstart. Kaster en Error (med evt.
+   .status) ved fejl, så kalderen selv formulerer fejlteksten. */
+async function fetchIntervalsActivities(athleteId, apiKey, monthsBack){
+  const oldest = new Date(); oldest.setMonth(oldest.getMonth()-monthsBack);
+  const fields = 'type,start_date_local,name,distance,moving_time,average_heartrate,icu_training_load,icu_fitness,icu_fatigue,icu_rpe,threshold_pace';
+  const url = `https://intervals.icu/api/v1/athlete/${encodeURIComponent(athleteId)}/activities?oldest=${isoLocal(oldest)}&fields=${fields}`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': 'Basic ' + btoa('API_KEY:'+apiKey) }
+  });
+  if(!res.ok){
+    const err = new Error('intervals.icu http '+res.status);
+    err.status = res.status;
+    throw err;
+  }
+  const json = await res.json();
+  if(!Array.isArray(json) || json.length===0) return { processed:null, empty:true, oldest };
+  return { processed: processCSVRows(json), empty:false, oldest };
+}
+
 function setupApiExperiment(){
   const btn = document.getElementById('apiFetchBtn');
   const statusEl = document.getElementById('apiFetchStatus');
@@ -2068,30 +2088,14 @@ function setupApiExperiment(){
 
     statusEl.textContent = 'Forsøger at hente fra intervals.icu …';
     const monthsBack = parseInt(document.getElementById('apiMonthsBack').value, 10) || 24;
-    const oldest = new Date(); oldest.setMonth(oldest.getMonth()-monthsBack);
-    const fields = 'type,start_date_local,name,distance,moving_time,average_heartrate,icu_training_load,icu_fitness,icu_fatigue,icu_rpe,threshold_pace';
-    const url = `https://intervals.icu/api/v1/athlete/${encodeURIComponent(athleteId)}/activities?oldest=${isoLocal(oldest)}&fields=${fields}`;
 
     try{
-      const res = await fetch(url, {
-        headers: { 'Authorization': 'Basic ' + btoa('API_KEY:'+apiKey) }
-      });
-      if(!res.ok){
-        statusEl.className='status-msg err';
-        if(res.status===401 || res.status===403){
-          statusEl.textContent = 'Afvist (fejl '+res.status+') — tjek at Athlete ID og API-nøgle er korrekte.';
-        } else {
-          statusEl.textContent = 'intervals.icu svarede med fejl '+res.status+'.';
-        }
-        return;
-      }
-      const json = await res.json();
-      if(!Array.isArray(json) || json.length===0){
+      const { processed, empty, oldest } = await fetchIntervalsActivities(athleteId, apiKey, monthsBack);
+      if(empty){
         statusEl.className='status-msg err';
         statusEl.textContent = 'Kaldet virkede, men fandt ingen aktiviteter i perioden.';
         return;
       }
-      const processed = processCSVRows(json);
       if(!processed){
         statusEl.className='status-msg err';
         statusEl.textContent = 'Fandt ingen løbeaktiviteter i svaret fra intervals.icu.';
@@ -2105,7 +2109,13 @@ function setupApiExperiment(){
       statusEl.textContent = '🎉 Det virkede! '+processed.totalRunsAllTime+' løb hentet direkte fra intervals.icu (tilbage til '+fmtDateDK(isoLocal(oldest))+'), uden CSV.';
     }catch(err){
       statusEl.className='status-msg err';
-      statusEl.textContent = 'Blokeret af browseren (sandsynligvis CORS) — intervals.icu tillader formentlig ikke kald direkte fra andre hjemmesider. Brug CSV-import i stedet: '+err.message;
+      if(err.status===401 || err.status===403){
+        statusEl.textContent = 'Afvist (fejl '+err.status+') — tjek at Athlete ID og API-nøgle er korrekte.';
+      } else if(err.status){
+        statusEl.textContent = 'intervals.icu svarede med fejl '+err.status+'.';
+      } else {
+        statusEl.textContent = 'Blokeret af browseren (sandsynligvis CORS) — intervals.icu tillader formentlig ikke kald direkte fra andre hjemmesider. Brug CSV-import i stedet: '+err.message;
+      }
     }
   });
 
@@ -2118,6 +2128,36 @@ function setupApiExperiment(){
       if(savedKey) document.getElementById('apiKey').value = savedKey;
     }catch(e){}
   })();
+}
+
+/* Stille auto-sync ved appstart: hvis Athlete ID + API-nøgle allerede er
+   gemt fra et tidligere manuelt hent, hentes nyeste aktiviteter automatisk
+   — ingen grund til at bede brugeren trykke "hent direkte" hver gang. */
+async function autoSyncFromIntervalsIcu(){
+  let athleteId, apiKey;
+  try{
+    athleteId = await storageGet('api_athlete_id');
+    apiKey = await storageGet('api_key');
+  }catch(e){ return; }
+  if(!athleteId || !apiKey) return;
+
+  const monthsBack = parseInt(document.getElementById('apiMonthsBack').value, 10) || 36;
+  const statusEl = document.getElementById('apiFetchStatus');
+  try{
+    const { processed, empty } = await fetchIntervalsActivities(athleteId, apiKey, monthsBack);
+    if(empty || !processed) return;
+    DATA = processed;
+    await saveState();
+    render();
+    if(statusEl){
+      statusEl.style.display='block';
+      statusEl.className='status-msg';
+      statusEl.textContent = '🔄 Synkroniseret automatisk ved åbning — '+processed.totalRunsAllTime+' løb hentet fra intervals.icu.';
+    }
+  }catch(e){
+    // Stille fejl (fx CORS eller midlertidigt netværksproblem) — brugeren
+    // kan altid trykke "hent direkte fra intervals.icu" manuelt som fallback.
+  }
 }
 
 function setupQuickAdd(){
@@ -2204,6 +2244,7 @@ document.getElementById('onboardScrollBtn').addEventListener('click', ()=>{
   document.getElementById('importSection').scrollIntoView({behavior:'smooth', block:'start'});
 });
 loadState();
+autoSyncFromIntervalsIcu();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
