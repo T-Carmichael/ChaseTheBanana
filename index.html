@@ -205,6 +205,29 @@ section + section{border-top:1px solid var(--line);}
   font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; text-transform:uppercase;
   letter-spacing:.03em; cursor:pointer;
 }
+.setup-steps{display:flex; flex-direction:column; gap:16px; margin-bottom:14px;}
+.setup-step{display:flex; gap:14px;}
+.setup-step-num{
+  flex:0 0 28px; height:28px; border-radius:50%; background:var(--easy); color:#0E2226;
+  display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif;
+  font-weight:600; font-size:14px;
+}
+.setup-step-body{flex:1; min-width:0;}
+.setup-step-title{font-family:'Oswald',sans-serif; font-weight:600; font-size:13.5px; text-transform:uppercase; letter-spacing:.01em; margin-bottom:4px;}
+.setup-step-desc{font-size:12.5px; color:var(--text-muted); line-height:1.55; margin-bottom:8px;}
+.setup-link{
+  display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--easy);
+  text-decoration:none; border-bottom:1px solid var(--easy);
+}
+.setup-link:hover{opacity:.8;}
+.onboard-altpath{font-size:11.5px; color:var(--text-dim); margin-top:4px;}
+.onboard-altpath-sep{margin:0 4px;}
+.link-btn{
+  background:none; border:none; padding:0; color:var(--text-dim); text-decoration:underline;
+  font-family:inherit; font-size:inherit; cursor:pointer;
+}
+.link-btn:hover{color:var(--easy);}
+@media (max-width:520px){.setup-step{gap:10px;} .setup-step-num{flex-basis:24px; height:24px; font-size:12px;}}
 
 /* GUIDE BUTTON + MODAL */
 .guide-btn{
@@ -455,11 +478,11 @@ footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
         <div class="guide-callout">Tjek at det virker: Lav en testaktivitet på uret, og se om den dukker op på intervals.icu's Aktiviteter-side indenfor 10-15 minutter. Sker det ikke, prøv Settings → Integrations → Garmin Connect → Reconnect.</div>
 
         <h3>3. Hent dine data i appen</h3>
-        <p class="guide-p"><b>Anbefalet: hent direkte via intervals.icu's API — ingen fil nødvendig.</b> Testet og bekræftet virkende:</p>
+        <p class="guide-p"><b>Anbefalet: hent direkte via intervals.icu's API — ingen fil nødvendig.</b> Testet og bekræftet virkende. Har du ikke allerede gjort dette under opsætningen øverst på forsiden, kan du gøre det manuelt her:</p>
         <ol class="guide-list">
-          <li>Find dit <b>Athlete ID</b> — står i din intervals.icu-URL (fx i250371)</li>
+          <li>Kopiér adressen fra browseren, når du er logget ind på intervals.icu — appen finder selv dit <b>Athlete ID</b> i linket (du kan også indtaste det direkte, fx i250371)</li>
           <li>Generér en <b>API-nøgle</b>: intervals.icu → Settings → nederst → "Developer Settings" → opret en nøgle</li>
-          <li>Indtast begge dele under "Opdater med nye data" → "🧪 Eksperimentelt: hent direkte fra intervals.icu"</li>
+          <li>Indtast begge dele under "Opdater med nye data" → "Forbindelse til intervals.icu"</li>
           <li>Sæt "Hvor langt tilbage (måneder)" — 36 er standard</li>
           <li>Tryk "Hent aktiviteter direkte"</li>
         </ol>
@@ -547,9 +570,43 @@ footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
   </header>
 
   <div class="onboard-banner" id="onboardBanner" style="display:none;">
-    <div class="onboard-title">Velkommen — ingen løbedata endnu</div>
-    <div class="onboard-text">Appen bygger dit program ud fra dine egne data. Importér en CSV-eksport fra intervals.icu eller Garmin Connect for at komme i gang — find feltet under "Opdater med nye data" længere nede, eller tryk her for at hoppe direkte dertil.</div>
-    <button class="onboard-btn" id="onboardScrollBtn">Gå til import</button>
+    <div class="onboard-title">Kom i gang på under 5 minutter</div>
+    <div class="onboard-text">Chase The Banana bygger dit program ud fra dine egne løbedata. Tre trin herunder forbinder dit ur direkte til appen — ingen filer, ingen teknisk viden nødvendig.</div>
+
+    <div class="setup-steps">
+      <div class="setup-step">
+        <div class="setup-step-num">1</div>
+        <div class="setup-step-body">
+          <div class="setup-step-title">Opret konto på intervals.icu og forbind Garmin</div>
+          <div class="setup-step-desc">Gratis, tager 2 minutter. Log ind med Garmin Connect, Strava eller e-mail — du kan forbinde Garmin med det samme under oprettelsen. Bagefter synkroniserer dine gennemførte ture automatisk fra uret.</div>
+          <a class="setup-link" href="https://intervals.icu" target="_blank" rel="noopener">Åbn intervals.icu ↗</a>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-num">2</div>
+        <div class="setup-step-body">
+          <div class="setup-step-title">Indsæt dit intervals.icu-link og din API-nøgle</div>
+          <div class="setup-step-desc">Kopiér adressen fra din browser, når du er logget ind på intervals.icu, og sæt den ind herunder — vi finder selv dit Athlete ID. API-nøglen laver du under Settings (nederst) → "Developer Settings" → "New API Key".</div>
+          <div class="form-grid">
+            <label>Link til din intervals.icu-side (eller bare dit Athlete ID)</label>
+            <input type="text" id="setupUrlInput" placeholder="fx https://intervals.icu/athlete/i250371">
+            <label>API-nøgle</label>
+            <input type="password" id="setupApiKeyInput" placeholder="Din API-nøgle">
+          </div>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-num">3</div>
+        <div class="setup-step-body">
+          <div class="setup-step-title">Test forbindelsen</div>
+          <div class="setup-step-desc">Vi henter dine seneste aktiviteter med det samme og bygger dit program.</div>
+          <button class="primary" id="setupTestBtn" type="button">Test forbindelse og hent data</button>
+          <div class="status-msg" id="setupStatus"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboard-altpath">Har du hellere en CSV-fil, eller vil du læse hele guiden? <button class="link-btn" id="onboardScrollBtn" type="button">Gå til CSV-import</button> <span class="onboard-altpath-sep">·</span> <button class="link-btn" id="onboardGuideBtn" type="button">Åbn hele guiden</button></div>
   </div>
 
   <div class="hero">
@@ -703,11 +760,11 @@ footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
         <div class="status-msg" id="importStatus"></div>
 
         <div class="api-experiment">
-          <div class="api-experiment-title">🧪 Eksperimentelt: hent direkte fra intervals.icu</div>
-          <div class="api-experiment-note">Ingen CSV nødvendig — men dette er utestet, og kan simpelthen fejle pga. browserens sikkerhedsregler (CORS). Din API-nøgle gemmes kun lokalt på denne enhed.</div>
+          <div class="api-experiment-title">Forbindelse til intervals.icu</div>
+          <div class="api-experiment-note">Allerede forbundet via opsætningen øverst på siden? Brug feltet her, hvis du vil skifte konto eller hente en frisk kopi af dine data manuelt. Din API-nøgle gemmes kun lokalt på denne enhed.</div>
           <div class="form-grid">
-            <label>Athlete ID (fx i250371)</label>
-            <input type="text" id="apiAthleteId" placeholder="i250371">
+            <label>Athlete ID eller link til din intervals.icu-side</label>
+            <input type="text" id="apiAthleteId" placeholder="fx i250371 eller hele linket">
             <label>API-nøgle (Settings → Developer Settings på intervals.icu)</label>
             <input type="password" id="apiKey" placeholder="Din API-nøgle">
             <label>Hvor langt tilbage (måneder)</label>
@@ -2048,13 +2105,23 @@ function setupImport(){
   }
 }
 
-/* ---------- EKSPERIMENT: direkte API-kald til intervals.icu (ingen CSV) ----------
-   Utestet fra min side (mit miljø har ingen netadgang) — den rigtige test sker i
-   brugerens egen browser. Kan fejle pga. CORS, hvis intervals.icu ikke tillader
-   kald fra andre domæner end deres eget. */
-/* Delt hente-logik: bruges både af det manuelle "hent direkte"-tryk
-   og af den stille auto-sync ved appstart. Kaster en Error (med evt.
-   .status) ved fejl, så kalderen selv formulerer fejlteksten. */
+/* ---------- Direkte API-kald til intervals.icu (ingen CSV nødvendig) ---------- */
+
+/* Så brugeren kan indsætte hele intervals.icu-linket i stedet for at skulle
+   finde og udtrække Athlete ID manuelt. Accepterer fx
+   "https://intervals.icu/athlete/i250371/...", "i250371" eller "250371". */
+function extractAthleteId(raw){
+  raw = (raw||'').trim();
+  const m = raw.match(/i(\d{3,})/i);
+  if(m) return 'i'+m[1];
+  if(/^\d{3,}$/.test(raw)) return 'i'+raw;
+  return raw;
+}
+
+/* Delt hente-logik: bruges både af det manuelle "hent direkte"-tryk,
+   opsætnings-guiden øverst på siden, og den stille auto-sync ved appstart.
+   Kaster en Error (med evt. .status) ved fejl, så kalderen selv formulerer
+   fejlteksten. */
 async function fetchIntervalsActivities(athleteId, apiKey, monthsBack){
   const oldest = new Date(); oldest.setMonth(oldest.getMonth()-monthsBack);
   const fields = 'type,start_date_local,name,distance,moving_time,average_heartrate,icu_training_load,icu_fitness,icu_fatigue,icu_rpe,threshold_pace';
@@ -2076,13 +2143,13 @@ function setupApiExperiment(){
   const btn = document.getElementById('apiFetchBtn');
   const statusEl = document.getElementById('apiFetchStatus');
   btn.addEventListener('click', async ()=>{
-    const athleteId = document.getElementById('apiAthleteId').value.trim();
+    const athleteId = extractAthleteId(document.getElementById('apiAthleteId').value);
     const apiKey = document.getElementById('apiKey').value.trim();
     statusEl.style.display='block'; statusEl.className='status-msg';
 
     if(!athleteId || !apiKey){
       statusEl.className='status-msg err';
-      statusEl.textContent = 'Udfyld både Athlete ID og API-nøgle.';
+      statusEl.textContent = 'Udfyld både Athlete ID/link og API-nøgle.';
       return;
     }
 
@@ -2128,6 +2195,74 @@ function setupApiExperiment(){
       if(savedKey) document.getElementById('apiKey').value = savedKey;
     }catch(e){}
   })();
+}
+
+/* Opsætnings-guide øverst på forsiden (kun synlig før første data er hentet) —
+   samme fælles hente-funktion som "Opdater med nye data"-sektionen, men med
+   direkte feedback på om forbindelsen virker, så en teknisk uerfaren
+   testperson ikke skal lede efter feltet eller åbne guide-modalen først. */
+function setupOnboardWizard(){
+  const btn = document.getElementById('setupTestBtn');
+  const statusEl = document.getElementById('setupStatus');
+  const guideBtn = document.getElementById('onboardGuideBtn');
+  if(guideBtn){
+    guideBtn.addEventListener('click', ()=>{
+      const mainGuideBtn = document.getElementById('guideBtn');
+      if(mainGuideBtn) mainGuideBtn.click();
+    });
+  }
+  if(!btn) return;
+
+  btn.addEventListener('click', async ()=>{
+    const athleteId = extractAthleteId(document.getElementById('setupUrlInput').value);
+    const apiKey = document.getElementById('setupApiKeyInput').value.trim();
+    statusEl.style.display='block'; statusEl.className='status-msg';
+
+    if(!athleteId || !apiKey){
+      statusEl.className='status-msg err';
+      statusEl.textContent = 'Udfyld både link/Athlete ID og API-nøgle.';
+      return;
+    }
+
+    statusEl.textContent = 'Forbinder til intervals.icu …';
+    btn.disabled = true;
+    try{
+      const { processed, empty } = await fetchIntervalsActivities(athleteId, apiKey, 36);
+      if(empty || !processed){
+        statusEl.className='status-msg err';
+        statusEl.textContent = 'Forbindelsen virker, men vi fandt ingen løb endnu på intervals.icu — løb en tur, vent til den er synkroniseret fra Garmin (10-15 min), og prøv igen.';
+        return;
+      }
+      DATA = processed;
+      await saveState();
+      await storageSet('api_athlete_id', athleteId);
+      await storageSet('api_key', apiKey);
+      const idField = document.getElementById('apiAthleteId');
+      const keyField = document.getElementById('apiKey');
+      if(idField) idField.value = athleteId;
+      if(keyField) keyField.value = apiKey;
+
+      render();
+      // render() skjuler banneret, når der er data — vis det igen kortvarigt,
+      // så brugeren faktisk ser bekræftelsen, før det forsvinder af sig selv.
+      const banner = document.getElementById('onboardBanner');
+      banner.style.display = 'block';
+      statusEl.className='status-msg';
+      statusEl.textContent = '🎉 Forbundet! '+processed.totalRunsAllTime+' løb hentet — dit program er klar herunder.';
+      setTimeout(()=>{ banner.style.display = 'none'; }, 4000);
+    }catch(err){
+      statusEl.className='status-msg err';
+      if(err.status===401 || err.status===403){
+        statusEl.textContent = 'Afvist — tjek at linket/Athlete ID og API-nøglen er korrekte.';
+      } else if(err.status){
+        statusEl.textContent = 'intervals.icu svarede med fejl '+err.status+'.';
+      } else {
+        statusEl.textContent = 'Kunne ikke oprette forbindelse lige nu (måske ingen netadgang). Prøv igen om lidt, eller brug CSV-import herunder.';
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
 }
 
 /* Stille auto-sync ved appstart: hvis Athlete ID + API-nøgle allerede er
@@ -2238,6 +2373,7 @@ setupGuideModal();
 
 setupImport();
 setupApiExperiment();
+setupOnboardWizard();
 setupQuickAdd();
 setupGoalForm();
 document.getElementById('onboardScrollBtn').addEventListener('click', ()=>{
