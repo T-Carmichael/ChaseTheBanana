@@ -510,7 +510,7 @@ footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
         <p class="guide-p">Samme model, som intervals.icu selv bruger. Tallene er relative til dig selv — ingen fast skala at sammenligne med andre løbere.</p>
 
         <h3>5. Sæt dit mål</h3>
-        <p class="guide-p">Under "Dit mål" vælger du niveau (Øvet/Nybegynder), distance (5 km / 10 km / halvmaraton), løbsdato, valgfrit måltid, og træningspas pr. uge (2-6). Appen bygger en periodiseret plan (Opbygning → Skarphed → Nedtrapning → Løbsuge) med automatisk lettere uger hver 4. uge og en grænse for, hvor hurtigt belastningen må stige.</p>
+        <p class="guide-p">Under "Dit mål" vælger du niveau (Øvet/Nybegynder), distance (5 km / 10 km / halvmaraton / maraton), løbsdato, valgfrit måltid, og træningspas pr. uge (2-6). Appen bygger en periodiseret plan (Opbygning → Skarphed → Nedtrapning → Løbsuge) med automatisk lettere uger hver 4. uge og en grænse for, hvor hurtigt belastningen må stige. Til maraton bruges et højere loft for lang tur og ugentlig volumen, og nedtrapningen strækkes til 3 uger, hvis der er tid nok — sat lidt for tidligt, advarer appen om det under "Dit mål".</p>
 
         <h3>6. Din uge</h3>
         <p class="guide-p">De konkrete pas for den kommende uge — typisk rolig tur (med stigningsløb), tempo-/kvalitetspas og lang tur. Hvert pas viser varighed, afstand, belastning, intensitet, zonefordeling og en kort begrundelse. To måder at få det på uret:</p>
@@ -645,6 +645,7 @@ footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
           <option value="5">5 km</option>
           <option value="10">10 km</option>
           <option value="21.0975" selected>Halvmaraton (21,1 km)</option>
+          <option value="42.195">Maraton (42,195 km)</option>
         </select>
         <label>Løbsdato</label>
         <input type="date" id="goalDate">
@@ -908,11 +909,23 @@ function parseGoalTime(str){
 function raceDistanceKm(){ return (GOAL && GOAL.distanceKm) ? GOAL.distanceKm : 21.0975; }
 function raceLabel(){
   const km = raceDistanceKm();
+  if(Math.abs(km-42.195)<0.05) return 'Maraton';
   if(Math.abs(km-21.0975)<0.05) return 'Halvmaraton';
   if(Math.abs(km-Math.round(km))<0.01) return Math.round(km)+' km';
   return km.toFixed(1)+' km';
 }
 function isBeginner(){ return GOAL && GOAL.level==='nybegynder'; }
+
+/* Loft for ugentlig volumen og lang tur, skaleret til distancen. Bruges
+   både af den flerugers periodisering (buildProgram) og af den enkelte
+   uges pas-generering (computePlan) — ellers ville et maraton-loft i det
+   ene sted stadig blive klippet ned af et halvmaraton-loft i det andet. */
+function capsForDistance(dist){
+  if(dist<=5) return {longCap:10, volCap:28};
+  if(dist<=10) return {longCap:14, volCap:36};
+  if(dist<=25) return {longCap:19, volCap:44}; // halvmaraton
+  return {longCap:32, volCap:95}; // maraton
+}
 
 /* ---------- PROGRAM / PERIODISERING ---------- */
 function mondayOf(d){
@@ -934,10 +947,20 @@ function buildProgram(){
   const currentAvg = Math.max(DATA.avgWeeklyKm4w, 8);
   const currentLong = Math.max(DATA.recentLongRunKm, 6);
   const dist = raceDistanceKm();
-  const caps = dist<=5 ? {longCap:10, volCap:28} : dist<=10 ? {longCap:14, volCap:36} : {longCap:19, volCap:44};
+  const caps = capsForDistance(dist);
+  const isMarathon = dist>25;
   const peakVolume = Math.min(Math.max(currentAvg*1.5, currentAvg+8), caps.volCap);
-  const peakLong = Math.min(Math.max(currentLong*1.25, currentLong+3), caps.longCap);
-  const taperWeeks = weeksToRace>=8 ? 2 : (weeksToRace>=4 ? 1 : 0);
+  // Maraton kræver en markant større opskalering af den lange tur end
+  // halvmaraton — 25% / +3km fra nuværende niveau (som ellers bruges) ville
+  // aldrig nå et maraton-relevant niveau (~28-32km), selv med et højere loft.
+  const peakLong = isMarathon
+    ? Math.min(Math.max(currentLong*1.5, currentLong+10, peakVolume*0.3), caps.longCap)
+    : Math.min(Math.max(currentLong*1.25, currentLong+3), caps.longCap);
+  // Maraton har gavn af en lidt længere nedtrapning end kortere distancer,
+  // når der er uger nok til det.
+  const taperWeeks = isMarathon
+    ? (weeksToRace>=12 ? 3 : weeksToRace>=6 ? 2 : (weeksToRace>=3 ? 1 : 0))
+    : (weeksToRace>=8 ? 2 : (weeksToRace>=4 ? 1 : 0));
   const buildWeeks = Math.max(1, weeksToRace - taperWeeks - 1);
 
   const weeks = [];
@@ -1044,6 +1067,9 @@ function renderGoal(){
   if(GOAL.targetTimeSec){
     const goalPace = (GOAL.targetTimeSec/60)/raceDistanceKm();
     txt += ' · MÅLFART ~' + mmss(goalPace) + '/KM';
+  }
+  if(raceDistanceKm()>25 && PROGRAM.weeksToRace<12){
+    txt += ' · KORT OPBYGNINGSTID TIL MARATON, OVERVEJ FLERE UGER';
   }
   countdown.textContent = txt;
 
@@ -1383,7 +1409,7 @@ function computePlan(){
     const factor = form < -12 ? 0.85 : (form > 12 ? 1.12 : 1.07);
     longRun = DATA.recentLongRunKm>0 ? DATA.recentLongRunKm*factor : Math.max(DATA.avgWeeklyKm4w*0.4, 8);
   }
-  longRun = Math.min(Math.max(longRun, 8), 19);
+  longRun = Math.min(Math.max(longRun, 8), capsForDistance(raceDistanceKm()).longCap);
   longRun = Math.round(longRun*2)/2;
 
   const specific = phase==='Skarphed' || phase==='Nedtrapning';
