@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hm-program-v17';
+const CACHE_NAME = 'hm-program-v18';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {

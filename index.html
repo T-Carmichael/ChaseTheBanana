@@ -419,6 +419,11 @@ input[type=file]{display:none;}
 }
 .api-experiment-title{font-family:'Oswald',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;}
 .api-experiment-note{font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-bottom:12px;}
+.tool-desc{font-size:11.5px; color:var(--text-dim); line-height:1.5; margin:-6px 0 12px;}
+.hard-effort-active{
+  margin-top:12px; background:#5FA88A14; border-left:3px solid var(--long); border-radius:8px;
+  padding:10px 12px; font-size:12px; color:var(--text-muted); line-height:1.5;
+}
 
 .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .form-grid label{grid-column:span 2; font-size:11.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.06em; margin-top:4px;}
@@ -511,6 +516,7 @@ footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
 
         <h3>5. Sæt dit mål</h3>
         <p class="guide-p">Under "Dit mål" vælger du niveau (Øvet/Nybegynder), distance (5 km / 10 km / halvmaraton / maraton), løbsdato, valgfrit måltid, og træningspas pr. uge (2-6). Appen bygger en periodiseret plan (Opbygning → Skarphed → Nedtrapning → Løbsuge) med automatisk lettere uger hver 4. uge og en grænse for, hvor hurtigt belastningen må stige. Til maraton bruges et højere loft for lang tur og ugentlig volumen, og nedtrapningen strækkes til 3 uger, hvis der er tid nok — sat lidt for tidligt, advarer appen om det under "Dit mål".</p>
+        <p class="guide-p">Lige under "Dit mål" kan du markere, hvis din seneste tur var hårdere eller mere skuffende end planlagt (fx en dårlig konkurrence). Sæt datoen, og den kommende uge bliver automatisk til bevidst let genopbygning — ingen intervaller, kortere lang tur — og kost-sektionen skifter til genopbygningsråd. Markeringen udløber selv efter 10 dage.</p>
 
         <h3>6. Din uge</h3>
         <p class="guide-p">De konkrete pas for den kommende uge — typisk rolig tur (med stigningsløb), tempo-/kvalitetspas og lang tur. Hvert pas viser varighed, afstand, belastning, intensitet, zonefordeling og en kort begrundelse. To måder at få det på uret:</p>
@@ -662,6 +668,21 @@ footer p{font-size:11.5px; color:var(--text-dim); line-height:1.6;}
       </div>
       <button class="primary" id="goalSubmit">Gem mål og byg program</button>
       <div class="status-msg" id="goalStatus"></div>
+    </div>
+
+    <div class="tool-card" style="margin-top:14px;">
+      <div class="tool-title">Kom du lige fra en hård eller skuffende tur?</div>
+      <div class="tool-desc">Marker datoen herunder, så bliver den kommende uge automatisk sat til bevidst let genopbygning — ingen intervaller, kortere lang tur — uanset hvad periodiseringen ellers ville have foreslået. Markeringen bruges kun i op til 10 dage, så du behøver ikke huske at fjerne den bagefter.</div>
+      <div class="form-grid">
+        <label>Dato for turen</label>
+        <input type="date" id="hardEffortDate">
+      </div>
+      <button class="primary" id="hardEffortSubmit" type="button">Marker næste uge som genopbygning</button>
+      <div class="status-msg" id="hardEffortStatus"></div>
+      <div class="hard-effort-active" id="hardEffortActive" style="display:none;">
+        Aktiv — næste uge er sat til genopbygning pga. tur d. <span id="hardEffortActiveDate"></span>
+        <button class="link-btn" id="hardEffortClear" type="button">Fjern markering</button>
+      </div>
     </div>
   </section>
 
@@ -817,6 +838,7 @@ let DATA = null;
 let GOAL = null; // {raceDate:'YYYY-MM-DD', targetTimeSec: number|null}
 let PROGRAM = null; // computed weeks array
 let SESSIONS_PER_WEEK = 3;
+let HARD_EFFORT = null; // {date:'YYYY-MM-DD'} | null — seneste tur markeret som hårdere end planlagt
 let volumeChartInstance = null, formChartInstance = null;
 
 function mmss(paceMin){
@@ -885,12 +907,41 @@ async function loadState(){
     if(raw) SESSIONS_PER_WEEK = parseInt(raw, 10) || 3;
   }catch(e){ SESSIONS_PER_WEEK = 3; }
   document.getElementById('sessionsPerWeek').value = String(SESSIONS_PER_WEEK);
+  try{
+    const raw = await storageGet('hard_effort');
+    if(raw) HARD_EFFORT = JSON.parse(raw);
+  }catch(e){ HARD_EFFORT = null; }
+  updateHardEffortUI();
   render();
 }
 
 async function saveState(){ await storageSet('run_dataset', JSON.stringify(DATA)); }
 async function saveGoal(){ await storageSet('race_goal', JSON.stringify(GOAL)); }
 async function saveSessionsPerWeek(){ await storageSet('sessions_per_week', String(SESSIONS_PER_WEEK)); }
+
+/* Hvor mange dage siden en markeret hård/skuffende tur — bruges til at gøre
+   næste uge til en bevidst let genopbygningsuge i både program og kost,
+   uden at brugeren skal huske at fjerne markeringen bagefter. */
+function hardEffortDaysAgo(){
+  if(!HARD_EFFORT || !HARD_EFFORT.date) return null;
+  const effortDate = new Date(HARD_EFFORT.date+'T00:00:00');
+  const todayMid = new Date(); todayMid.setHours(0,0,0,0);
+  return Math.round((todayMid-effortDate)/86400000);
+}
+function isRecoveringFromHardEffort(){
+  const d = hardEffortDaysAgo();
+  return d!==null && d>=0 && d<=10;
+}
+function updateHardEffortUI(){
+  const active = document.getElementById('hardEffortActive');
+  if(!active) return;
+  if(HARD_EFFORT && HARD_EFFORT.date){
+    active.style.display = 'block';
+    document.getElementById('hardEffortActiveDate').textContent = fmtDateDK(HARD_EFFORT.date);
+  } else {
+    active.style.display = 'none';
+  }
+}
 
 function secToHms(sec){
   const h = Math.floor(sec/3600), m = Math.round((sec%3600)/60);
@@ -985,6 +1036,17 @@ function buildProgram(){
     }
     weeks.push({startDate, phase, volKm, longKm, isCurrent:i===0, isRace:weeksFromRace===0});
   }
+
+  // Markeret en hård/skuffende tur indenfor de sidste ~10 dage? Så tvinges
+  // den kommende uge til bevidst let genopbygning, uanset hvad den normale
+  // periodisering ellers ville have foreslået her.
+  if(isRecoveringFromHardEffort() && weeks.length>0 && !weeks[0].isRace){
+    const w0 = weeks[0];
+    w0.phase = 'Genopbygning';
+    w0.volKm = Math.round(currentAvg*0.55);
+    w0.longKm = Math.round(currentLong*0.5*2)/2;
+  }
+
   PROGRAM = {weeks, weeksToRace};
   simulateProgram();
 }
@@ -1126,8 +1188,49 @@ function setupGoalForm(){
   });
 }
 
+function setupHardEffort(){
+  const dateInput = document.getElementById('hardEffortDate');
+  const submitBtn = document.getElementById('hardEffortSubmit');
+  const clearBtn = document.getElementById('hardEffortClear');
+  const statusEl = document.getElementById('hardEffortStatus');
+
+  submitBtn.addEventListener('click', async ()=>{
+    const val = dateInput.value;
+    statusEl.style.display='block'; statusEl.className='status-msg';
+    if(!val){
+      statusEl.className='status-msg err'; statusEl.textContent='Vælg datoen for turen først.'; return;
+    }
+    if(new Date(val+'T00:00:00') > new Date()){
+      statusEl.className='status-msg err'; statusEl.textContent='Datoen kan ikke være i fremtiden.'; return;
+    }
+    HARD_EFFORT = {date: val};
+    await storageSet('hard_effort', JSON.stringify(HARD_EFFORT));
+    updateHardEffortUI();
+    render();
+    statusEl.className='status-msg';
+    statusEl.textContent = 'Noteret — næste uge er sat til genopbygning.';
+  });
+
+  clearBtn.addEventListener('click', async ()=>{
+    HARD_EFFORT = null;
+    await storageSet('hard_effort', '');
+    updateHardEffortUI();
+    statusEl.style.display='none';
+    render();
+  });
+}
+
 /* ---------- ERNÆRING ---------- */
 const NUTRITION_CARDS = {
+  recovery: {
+    kind:'GENOPBYGNING', cls:'long', title:'Efter en hård eller skuffende tur',
+    points:[
+      'Kulhydrat + protein indenfor 30-60 minutter, og lidt ekstra kulhydrat de første par dage — glykogen-depoterne skal fyldes op, før kroppen er klar til ny kvalitet',
+      'Ekstra protein hjælper med at reparere det, der er slidt ned',
+      'Prioritér søvn lidt højere end normalt — det meste af restitutionen sker uden for træningen',
+      'Ingen grund til at "straffe" dig selv med restriktion, fordi det ikke gik som håbet — det forsinker bare genopbygningen'
+    ]
+  },
   everyday: {
     kind:'HVERDAG', cls:'', title:'Kost i opbygningen',
     points:[
@@ -1204,7 +1307,8 @@ function renderNutrition(){
   const grid = document.getElementById('nutritionGrid');
   const sub = document.getElementById('nutritionSub');
   grid.innerHTML = '';
-  const cardsToShow = [NUTRITION_CARDS.everyday];
+  const recovering = isRecoveringFromHardEffort();
+  const cardsToShow = recovering ? [NUTRITION_CARDS.recovery, NUTRITION_CARDS.everyday] : [NUTRITION_CARDS.everyday];
 
   let daysToRace = null;
   if(GOAL && GOAL.raceDate){
@@ -1232,6 +1336,7 @@ function renderNutrition(){
     cardsToShow.push(NUTRITION_CARDS.afterRace);
     sub.textContent = 'EFTER LØBET';
   }
+  if(recovering) sub.textContent = 'GENOPBYGNING EFTER SENESTE TUR · ' + sub.textContent;
 
   cardsToShow.forEach(c => grid.appendChild(nutritionCardHtml(c)));
 }
@@ -1443,13 +1548,18 @@ function buildEasySegs(p, withStrides){
 /* Vælger pas-typer ud fra ønsket antal ugentlige træninger.
    Lang tur og tærskelpas prioriteres altid; ekstra pas fyldes med rolige ture
    (den første med stigningsløb, resten uden). */
-function getSessionPlan(n){
+function getSessionPlan(n, easyOnly){
   n = Math.max(1, Math.min(n, 6));
-  if(n===1) return [{type:'long', withStrides:false}];
-  if(n===2) return [{type:'tempo'}, {type:'long'}];
-  const plan = [{type:'easy', withStrides:true}];
-  for(let i=1;i<n-2;i++) plan.push({type:'easy', withStrides:false});
-  plan.push({type:'tempo'}, {type:'long'});
+  let plan;
+  if(n===1) plan = [{type:'long', withStrides:false}];
+  else if(n===2) plan = [{type:'tempo'}, {type:'long'}];
+  else {
+    plan = [{type:'easy', withStrides:true}];
+    for(let i=1;i<n-2;i++) plan.push({type:'easy', withStrides:false});
+    plan.push({type:'tempo'}, {type:'long'});
+  }
+  // I en genopbygningsuge droppes intervaller/tempo helt til fordel for rolige ture.
+  if(easyOnly) plan = plan.map(item => item.type==='tempo' ? {type:'easy', withStrides:false} : item);
   return plan;
 }
 
@@ -1503,7 +1613,7 @@ const RATIONALE = {
   tempo: p => p.specific
     ? 'Intervaller lagt tæt på din målfart, så krop og hoved vænner sig til præcis den belastning, du skal holde på løbsdagen.'
     : 'Hårdt, men kontrolleret arbejde omkring tærskel. Forlænger den tid, du kan holde et højt tempo, og flytter tærsklen i den rigtige retning over tid.',
-  long: p => p.form < -12
+  long: p => (p.form < -12 || p.phase==='Genopbygning')
     ? 'En bevidst kortere lang tur i en let uge, så kroppen kan restituere, mens den aerobe base fastholdes.'
     : 'Bygger den specifikke udholdenhed, ' + raceLabel().toLowerCase() + ' kræver — tid på benene i stabilt tempo, med en afsluttende opskruning der vænner benene til at accelerere, selv når de er trætte.'
 };
@@ -1657,7 +1767,7 @@ function renderPlan(form){
   const p = computePlan();
   document.getElementById('planPhase').textContent = (GOAL && PROGRAM ? p.phase.toUpperCase()+' · ' : '') + SESSIONS_PER_WEEK+' PAS · ' + (DATA.totalRunsAllTime>0 ? 'SIMULERET UD FRA DINE EGNE DATA' : 'EKSEMPEL — IMPORTÉR DATA FOR AT PERSONALISERE');
 
-  const sessionPlan = getSessionPlan(SESSIONS_PER_WEEK);
+  const sessionPlan = getSessionPlan(SESSIONS_PER_WEEK, p.phase==='Genopbygning');
   let easyCount = 0;
   const cards = sessionPlan.map(item=>{
     if(item.type==='easy'){
@@ -2402,6 +2512,7 @@ setupApiExperiment();
 setupOnboardWizard();
 setupQuickAdd();
 setupGoalForm();
+setupHardEffort();
 document.getElementById('onboardScrollBtn').addEventListener('click', ()=>{
   document.getElementById('importSection').scrollIntoView({behavior:'smooth', block:'start'});
 });
